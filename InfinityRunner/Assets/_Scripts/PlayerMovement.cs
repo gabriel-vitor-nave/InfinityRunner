@@ -3,11 +3,19 @@ using UnityEngine;
 // este código estará anexado ao Player (GameObject)
 public class PlayerMovement : MonoBehaviour
 {
-    public float velocidadePlayer = 2f;
-    public float velocidadeHorizontal = 3f;
-    public float rightLimit = 5.5f;
-    public float leftLimit = -5.5f;
+    public float velocidadePlayer = 6f;
+    public float velocidadeHorizontal = 7f;
+    public float limit = 7f;
 
+    // privadinhus
+    private float rightLimit;
+    private float leftLimit;
+
+    private void Start()
+    {
+        rightLimit = limit;
+        leftLimit = -limit;
+    }
 
     void Update()
     {
