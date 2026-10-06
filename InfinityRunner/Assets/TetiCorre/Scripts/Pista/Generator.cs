@@ -177,13 +177,8 @@ namespace TetiCorre
 
                 if (faixa == faixaLivre)
                 {
-                    // Na faixa livre: às vezes uma barreira (aí tem que pular), senão ímã ou moedas.
-                    if (Random.value < config.chanceBarreiraNaFaixaLivre * dificuldade)
-                    {
-                        ColocarObstaculo(segmento, poolsBarreira, x, z);
-                        ColocarMoedasEmArco(segmento, x, z);
-                    }
-                    else if (Random.value < config.chanceIma)
+                    // Esta faixa nunca recebe obstáculos: há sempre uma rota por desvio.
+                    if (Random.value < config.chanceIma)
                     {
                         ColocarItem(segmento, poolIma, new Vector3(x, alturaMoeda, z));
                     }

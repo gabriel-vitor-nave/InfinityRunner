@@ -92,7 +92,7 @@ namespace TetiCorre
         {
             float dt = Time.deltaTime;
 
-            if (controlavel)
+            if (controlavel && GameManager.Instancia.Estado == EstadoDoJogo.Jogando)
             {
                 LerTeclado();
                 LerSwipe();
