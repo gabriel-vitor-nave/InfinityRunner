@@ -67,7 +67,6 @@ namespace TetiCorre
                     Velocidade = Mathf.Min(Velocidade + config.aceleracao * Time.deltaTime, config.velocidadeMaxima);
                     interfaceDoJogo.AtualizarJogo(Distancia, Centavos, jogador.ImaAtivo, jogador.FracaoImaRestante);
                     efeitos.AtualizarVelocidade(Mathf.InverseLerp(config.velocidadeInicial, config.velocidadeMaxima, Velocidade));
-                    if (ApertouPausa()) Pausar();
                     break;
 
                 case EstadoDoJogo.Pausado:
@@ -75,7 +74,6 @@ namespace TetiCorre
                     break;
             }
 
-            if (Input.GetKeyDown(KeyCode.M)) AlternarSom();
         }
 
         private static bool ApertouPausa()

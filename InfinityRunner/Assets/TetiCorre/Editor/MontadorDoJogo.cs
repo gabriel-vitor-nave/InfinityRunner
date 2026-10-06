@@ -54,9 +54,8 @@ namespace TetiCorre.Editor
             var segmentoObj = new GameObject("Segmento");
             var segmento = segmentoObj.AddComponent<Segmento>();
             Cubo("Pista 10,5 x 50", segmentoObj.transform, new Vector3(0, -.2f, 25), new Vector3(10.5f, .4f, 50), asfalto);
-            for (int z = 5; z < 50; z += 10)
-                ModeloImportado("Roads/Road Lane_03.prefab", segmentoObj.transform,
-                    new Vector3(0, -.06f, z), new Vector3(10.5f, .06f, 10));
+            foreach (float lado in new[] { -1f, 1f })
+                Cubo("Calçada elevada", segmentoObj.transform, new Vector3(lado * 6.25f, .12f, 25), new Vector3(2f, .24f, 50), branco);
             foreach (float x in new[] { -1.75f, 1.75f })
                 for (int z = 1; z < 50; z += 4)
                     Cubo("Marca", segmentoObj.transform, new Vector3(x, .015f, z), new Vector3(.08f, .02f, 2), branco);
@@ -111,12 +110,19 @@ namespace TetiCorre.Editor
             foreach (var componente in modelo.GetComponentsInChildren<PlayerMovement>()) UnityEngine.Object.DestroyImmediate(componente);
             foreach (var componente in modelo.GetComponentsInChildren<Rigidbody>()) UnityEngine.Object.DestroyImmediate(componente);
             foreach (var componente in modelo.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(componente);
+            foreach (var componente in modelo.GetComponentsInChildren<Camera>()) UnityEngine.Object.DestroyImmediate(componente.gameObject);
             modelo.name = "Teti";
             AjustarModelo(modelo, 1.7f, true);
             var animator = modelo.GetComponentInChildren<Animator>();
             if (animator == null) animator = modelo.AddComponent<Animator>();
             animator.applyRootMotion = false;
             animator.runtimeAnimatorController = CriarAnimacoes();
+            // Preserva o ajuste de altura aprovado na cena; o apoio visual acompanha a pose.
+            modelo.transform.localPosition = new Vector3(modelo.transform.localPosition.x, .614f, modelo.transform.localPosition.z);
+            var apoio = jogadorObj.AddComponent<ApoioVisualDaTeti>();
+            Ligar(apoio, "modelo", modelo.transform); Ligar(apoio, "animator", animator);
+            Ligar(apoio, "danca", AssetDatabase.LoadAssetAtPath<AnimationClip>(Gerados + "/Danca_Boba.anim"));
+            apoio.AtualizarPreview(.8f);
             var animacao = jogadorObj.AddComponent<AnimacaoDoJogador>();
             Ligar(animacao, "animator", animator); Ligar(animacao, "modelo", modelo.transform);
             Ligar(jogador, "config", config); Ligar(jogador, "animacao", animacao);
@@ -133,7 +139,10 @@ namespace TetiCorre.Editor
             seguir.IrParaMenu();
             var luz = new GameObject("Sol", typeof(Light)).GetComponent<Light>();
             luz.type = LightType.Directional; luz.intensity = 1.2f; luz.transform.rotation = Quaternion.Euler(45, -30, 0);
+            luz.shadows = LightShadows.Soft;
+            QualitySettings.shadowDistance = 60f;
             RenderSettings.ambientLight = new Color(.65f, .7f, .8f);
+            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
             var gerador = new GameObject("Gerador").AddComponent<Generator>();
             Ligar(gerador, "config", config); Ligar(gerador, "jogador", jogadorObj.transform);
             LigarArray(gerador, "prefabsSegmento", segmento);
@@ -191,22 +200,27 @@ namespace TetiCorre.Editor
         private static void CriarCidade(Transform pai)
         {
             const string pasta = "Assets/Pacotes/SimplePoly City - Low Poly Assets/Prefab/Buildings";
-            var modelos = AssetDatabase.FindAssets("t:Prefab", new[] { pasta }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToArray();
+            var modelos = AssetDatabase.FindAssets("t:Prefab", new[] { pasta }).Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => Path.GetFileName(p).StartsWith("Building Sky_")).OrderBy(p => p).Take(5).ToArray();
             if (modelos.Length == 0) throw new InvalidOperationException("Prefabs de cidade não encontrados.");
-            int indice = 0;
             foreach (float lado in new[] { -1f, 1f })
                 for (int z = 5; z < 50; z += 10)
                 {
-                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelos[indice++ % modelos.Length]), pai);
-                    AjustarModelo(obj, 7f, true);
-                    obj.transform.localPosition += new Vector3(lado * 9f, 0, z);
+                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelos[(z / 10) % modelos.Length]), pai);
                     obj.transform.localRotation = Quaternion.Euler(0, lado > 0 ? -90 : 90, 0);
+                    AjustarModelo(obj, 7f, true);
+                    var limites = LimitesVisuais(obj);
+                    float fator = Mathf.Min(1f, 9f / limites.size.z, 6f / limites.size.x);
+                    obj.transform.localScale *= fator;
+                    AjustarCentroNoChao(obj, pai);
+                    limites = LimitesVisuais(obj);
+                    obj.transform.localPosition += new Vector3(lado * (7.5f + limites.extents.x), .24f, z);
                     foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
                 }
             foreach (float lado in new[] { -1f, 1f })
                 for (int z = 8; z < 50; z += 15)
                     ModeloImportado("Props/Props_Street Light.prefab", pai,
-                        new Vector3(lado * 5.8f, 0, z), new Vector3(.8f, 4, 1));
+                        new Vector3(lado * 6.25f, .24f, z), new Vector3(.8f, 4, 1));
         }
 
         private static GameObject ModeloImportado(string caminho, Transform pai, Vector3 posicao, Vector3 tamanho)
@@ -215,18 +229,39 @@ namespace TetiCorre.Editor
             var asset = AssetDatabase.LoadAssetAtPath<GameObject>(pasta + caminho);
             if (asset == null) throw new InvalidOperationException("Prefab não encontrado: " + caminho);
             var obj = (GameObject)PrefabUtility.InstantiatePrefab(asset, pai);
-            var renderers = obj.GetComponentsInChildren<Renderer>();
-            var bounds = renderers[0].bounds;
-            foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
+            var bounds = LimitesVisuais(obj);
             var escala = obj.transform.localScale;
             obj.transform.localScale = new Vector3(escala.x * tamanho.x / bounds.size.x,
                 escala.y * tamanho.y / bounds.size.y, escala.z * tamanho.z / bounds.size.z);
-            bounds = renderers[0].bounds;
-            foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
-            obj.transform.position -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z) - obj.transform.position;
+            AjustarCentroNoChao(obj, pai);
             obj.transform.localPosition += posicao;
             foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
             return obj;
+        }
+
+        private static Bounds LimitesVisuais(GameObject obj)
+        {
+            bool iniciou = false;
+            var limites = new Bounds();
+            foreach (var filtro in obj.GetComponentsInChildren<MeshFilter>())
+            {
+                var renderer = filtro.GetComponent<Renderer>();
+                if (renderer == null || !renderer.enabled || filtro.sharedMesh == null) continue;
+                // Usa a geometria transformada, sem depender do cache de bounds do renderer.
+                foreach (var vertice in filtro.sharedMesh.vertices)
+                {
+                    var ponto = filtro.transform.TransformPoint(vertice);
+                    if (!iniciou) { limites = new Bounds(ponto, Vector3.zero); iniciou = true; }
+                    else limites.Encapsulate(ponto);
+                }
+            }
+            return limites;
+        }
+
+        private static void AjustarCentroNoChao(GameObject obj, Transform pai)
+        {
+            var limites = LimitesVisuais(obj);
+            obj.transform.position += pai.position - new Vector3(limites.center.x, limites.min.y, limites.center.z);
         }
 
         private static void CriarPreview(Segmento segmento, Moeda moeda, Obstaculo barreira, Obstaculo vagao)
@@ -256,7 +291,7 @@ namespace TetiCorre.Editor
         // Normaliza modelos com unidades e pivôs diferentes sem alterar seus arquivos de origem.
         private static void AjustarModelo(GameObject obj, float altura, bool apoiarNoChao)
         {
-            var renderers = obj.GetComponentsInChildren<Renderer>();
+            var renderers = obj.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToArray();
             if (renderers.Length == 0) return;
             var limites = renderers[0].bounds;
             foreach (var renderer in renderers) limites.Encapsulate(renderer.bounds);
@@ -265,7 +300,8 @@ namespace TetiCorre.Editor
             obj.transform.localScale *= altura / medida;
             limites = renderers[0].bounds;
             foreach (var renderer in renderers) limites.Encapsulate(renderer.bounds);
-            var deslocamento = new Vector3(limites.center.x, apoiarNoChao ? limites.min.y : limites.center.y, limites.center.z) - obj.transform.position;
+            Vector3 origem = obj.transform.parent != null ? obj.transform.parent.position : Vector3.zero;
+            var deslocamento = new Vector3(limites.center.x, apoiarNoChao ? limites.min.y : limites.center.y, limites.center.z) - origem;
             obj.transform.position -= deslocamento;
         }
 
@@ -278,16 +314,20 @@ namespace TetiCorre.Editor
             new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
             var ui = canvasObj.AddComponent<UIManager>();
             var menu = Painel("Menu", canvasObj.transform); Ligar(ui, "painelMenu", menu);
+            Cartao(menu.transform, new Vector2(0, 240), new Vector2(960, 110));
+            Cartao(menu.transform, new Vector2(300, 55), new Vector2(330, 270));
+            Cartao(menu.transform, new Vector2(-290, -185), new Vector2(360, 160));
             Texto("Teti Corre!", menu.transform, new Vector2(0, 230), 52);
-            Ligar(ui, "botaoJogar", Botao("JOGAR", menu.transform, new Vector2(0, -30)));
+            Ligar(ui, "botaoJogar", Botao("JOGAR", menu.transform, new Vector2(-290, -40)));
             Ligar(ui, "textoRecorde", Texto("Recorde", menu.transform, new Vector2(300, 130), 24));
             Ligar(ui, "textoUltimaCorrida", Texto("Última corrida", menu.transform, new Vector2(300, 30), 22));
             Ligar(ui, "seloNovoRecorde", Texto("NOVO RECORDE!", menu.transform, new Vector2(300, -60), 24).gameObject);
-            Ligar(ui, "textoControles", Texto("Controles", menu.transform, new Vector2(0, -190), 20));
+            Ligar(ui, "textoControles", Texto("Controles", menu.transform, new Vector2(-290, -190), 20));
             var hud = Painel("HUD", canvasObj.transform); Ligar(ui, "painelJogo", hud);
+
             Ligar(ui, "textoDistancia", Texto("0 m", hud.transform, new Vector2(-300, 240), 30));
             Ligar(ui, "textoNota", Texto("0", hud.transform, new Vector2(0, 240), 30));
-            Ligar(ui, "botaoPausa", Botao("PAUSA", hud.transform, new Vector2(320, 240)));
+
             var indicador = Texto("ÍMÃ", hud.transform, new Vector2(-300, 170), 22);
             Ligar(ui, "indicadorIma", indicador.gameObject);
             var barra = new GameObject("BarraIma", typeof(RectTransform), typeof(Image));
@@ -302,9 +342,7 @@ namespace TetiCorre.Editor
             Texto("PAUSADO", pausa.transform, new Vector2(0, 120), 42);
             Ligar(ui, "botaoContinuar", Botao("CONTINUAR", pausa.transform, Vector2.zero));
             Ligar(ui, "botaoMenu", Botao("MENU", pausa.transform, new Vector2(0, -90)));
-            var som = Botao("SOM (M)", canvasObj.transform, new Vector2(320, -240));
-            Ligar(ui, "botaoSom", som); Ligar(ui, "iconeSom", som.GetComponent<Image>());
-            Ligar(ui, "spriteSomLigado", SpriteBranco()); Ligar(ui, "spriteSomDesligado", SpriteBranco());
+
             var fade = Painel("Transicao", canvasObj.transform); Fundo(fade.gameObject, Color.black); Ligar(ui, "telaPreta", fade);
             hud.gameObject.SetActive(false); pausa.gameObject.SetActive(false); fade.gameObject.SetActive(false);
             return ui;
@@ -334,6 +372,12 @@ namespace TetiCorre.Editor
         private static void Rect(GameObject obj, Vector2 pos, Vector2 tamanho)
         { var r = (RectTransform)obj.transform; r.anchorMin = r.anchorMax = new Vector2(.5f, .5f); r.anchoredPosition = pos; r.sizeDelta = tamanho; }
         private static void Fundo(GameObject obj, Color cor) { var image = obj.AddComponent<Image>(); image.color = cor; }
+        private static void Cartao(Transform pai, Vector2 posicao, Vector2 tamanho)
+        {
+            var obj = new GameObject("Fundo", typeof(RectTransform), typeof(Image)); obj.transform.SetParent(pai, false);
+            Rect(obj, posicao, tamanho); var imagem = obj.GetComponent<Image>();
+            imagem.color = new Color(.03f, .08f, .15f, .8f); imagem.raycastTarget = false;
+        }
         private static Sprite SpriteBranco()
         {
             string path = Gerados + "/Branco.png";

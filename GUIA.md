@@ -20,7 +20,7 @@ de queda termina e a cena volta ao menu sem recarregar.
 - A/D ou setas esquerda/direita: trocar de faixa.
 - Espaço, W ou seta para cima: pular.
 - S ou seta para baixo no ar: descer mais rápido.
-- Esc/P: pausar ou continuar; M: alternar o som.
+- A corrida mostra somente distância, moedas e o indicador temporário do ímã.
 - Enter no menu: jogar. Arrastar com mouse ou swipe permite os mesmos movimentos.
 
 ## Por que a pista não acaba?

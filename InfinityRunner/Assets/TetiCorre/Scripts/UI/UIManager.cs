@@ -47,14 +47,14 @@ namespace TetiCorre
         private void Awake()
         {
             botaoJogar.onClick.AddListener(() => GameManager.Instancia.Jogar());
-            botaoPausa.onClick.AddListener(() => GameManager.Instancia.Pausar());
+            if (botaoPausa != null) botaoPausa.onClick.AddListener(() => GameManager.Instancia.Pausar());
             botaoContinuar.onClick.AddListener(() => GameManager.Instancia.Continuar());
             botaoMenu.onClick.AddListener(() => GameManager.Instancia.DesistirEVoltarAoMenu());
-            botaoSom.onClick.AddListener(() => GameManager.Instancia.AlternarSom());
+            if (botaoSom != null) botaoSom.onClick.AddListener(() => GameManager.Instancia.AlternarSom());
 
             textoControles.text = Application.isMobilePlatform
                 ? "Deslize pros lados pra trocar de faixa\nDeslize pra cima pra pular"
-                : "A / D  ou  SETAS: trocar de faixa\nESPAÇO / W: pular     S: descer rápido\nESC: pausar     M: som";
+                : "A / D  ou  SETAS: trocar de faixa\nESPAÇO / W: pular     S: descer rápido";
 
             Mostrar(telaPreta, false);
         }
@@ -119,6 +119,7 @@ namespace TetiCorre
 
         public void AtualizarIconeDeSom(bool mudo)
         {
+            if (iconeSom == null || botaoSom == null) return;
             iconeSom.sprite = mudo ? spriteSomDesligado : spriteSomLigado;
             var legenda = botaoSom.GetComponentInChildren<TMP_Text>();
             if (legenda != null) legenda.text = mudo ? "SOM: OFF" : "SOM: ON";

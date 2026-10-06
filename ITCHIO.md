@@ -11,7 +11,7 @@ Até onde você consegue chegar?
 Projeto acadêmico desenvolvido na Unity com apoio de inteligência artificial.
 
 **Controles:** A/D ou setas para trocar de faixa, Espaço/W para pular, S para
-descer rápido, Esc/P para pausar e M para alternar o som. Também aceita swipe
+descer rápido. Também aceita swipe
 ou arrasto com o mouse. Enter inicia a corrida no menu.
 
 O recorde é salvo no navegador usado para jogar. Limpar os dados do site pode

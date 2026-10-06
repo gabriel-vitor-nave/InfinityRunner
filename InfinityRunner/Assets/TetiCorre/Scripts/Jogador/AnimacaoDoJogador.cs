@@ -30,7 +30,7 @@ namespace TetiCorre
         public void Dancar()
         {
             dancando = true;
-            dancaAtual = Random.Range(0, NomesDasAnimacoes.HashDancas.Length);
+            dancaAtual = 0;
             Tocar(NomesDasAnimacoes.HashDancas[dancaAtual], 0f);
             proximaTrocaDeDanca = Time.time + intervaloEntreDancas;
             anguloAtual = 0f;
@@ -72,7 +72,7 @@ namespace TetiCorre
             if (!dancando || Time.time < proximaTrocaDeDanca) return;
 
             // Sorteia uma dança diferente da atual.
-            int quantidade = NomesDasAnimacoes.HashDancas.Length;
+            int quantidade = 2; // As duas danças; Happy Idle fica disponível no controller.
             dancaAtual = (dancaAtual + Random.Range(1, quantidade)) % quantidade;
             Tocar(NomesDasAnimacoes.HashDancas[dancaAtual], 0.4f);
             proximaTrocaDeDanca = Time.time + intervaloEntreDancas;
