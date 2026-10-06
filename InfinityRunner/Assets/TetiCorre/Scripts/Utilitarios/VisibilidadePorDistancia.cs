@@ -37,7 +37,9 @@ namespace TetiCorre
             float z = transform.position.z - zJogador;
             float distancia = Mathf.Abs(z);
             float limite = itemDaPista ? config.distanciaItens : config.distanciaCenario;
-            int novo = z < -18f || distancia > limite ? 2 : itemDaPista || distancia <= config.distanciaDetalhes ? 0 : 1;
+            bool menu = GameManager.Instancia != null && GameManager.Instancia.Estado == EstadoDoJogo.Menu;
+            bool foraDaVista = menu ? z > 18f : z < -18f;
+            int novo = foraDaVista || distancia > limite ? 2 : itemDaPista || distancia <= config.distanciaDetalhes ? 0 : 1;
             bool mudou = novo != nivel;
             if (mudou)
             {

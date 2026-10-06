@@ -17,23 +17,30 @@ MonoBehaviour:
   velocidadeInicial: 10
   velocidadeMaxima: 24
   aceleracao: 0.18
-  alturaPulo: 2.2
-  gravidade: -40
+  alturaPulo: 3
+  alturaPuloMaxima: 4.2
+  gravidade: -32
   gravidadeDescidaRapida: -140
   comprimentoSegmento: 50
-  segmentosNaFrente: 6
-  segmentosAtras: 2
+  segmentosNaFrente: 4
+  segmentosAtras: 1
   segmentosSemObstaculo: 2
   distanciaDificuldadeMaxima: 1500
   chanceObstaculoInicial: 0.35
   chanceObstaculoMaxima: 0.8
   chanceVagaoInicial: 0.3
   chanceVagaoMaxima: 0.6
-  chanceBarreiraNaFaixaLivre: 0.35
   centavosPorMoeda: 1
-  chanceFileiraDeMoedas: 0.7
   chanceMoedasEmOutraFaixa: 0.25
   chanceIma: 0.06
   duracaoIma: 10
   raioIma: 8
   tempoAteVoltarAoMenu: 2.5
+  distanciaDetalhes: 55
+  distanciaCenario: 115
+  distanciaItens: 75
+  distanciaSombras: 25
+  inicioCurvatura: 35
+  forcaCurvatura: 0.0025
+  duracaoInicialPeriodo: 60
+  duracaoTransicaoLuz: 8

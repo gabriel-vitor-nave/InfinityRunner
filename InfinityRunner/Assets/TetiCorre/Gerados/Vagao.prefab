@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2119641848648729008}
   - component: {fileID: 8362806243965843481}
+  - component: {fileID: 4772766493974952335}
   m_Layer: 0
   m_Name: Vagao
   m_TagString: Untagged
@@ -48,6 +49,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 1
   comprimento: 7
+--- !u!114 &4772766493974952335
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671271816513450626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e632f640cf21b144ead0219cf633230e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detalhes: []
+  simplificados: []
+  itemDaPista: 1
+  geraSombras: 1
 --- !u!1 &5151089370858036771
 GameObject:
   m_ObjectHideFlags: 0
@@ -74,8 +91,8 @@ Transform:
   m_GameObject: {fileID: 5151089370858036771}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0}
-  m_LocalScale: {x: 2.8, y: 3, z: 7}
+  m_LocalPosition: {x: 0, y: 1.2099999, z: 0}
+  m_LocalScale: {x: 2.1839998, y: 2.34, z: 5.74}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2119641848648729008}
@@ -165,6 +182,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 9500f0cdde0097a4aac35ced7c1935d7, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 380be9c94efa2ef4a907a558c8144111, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

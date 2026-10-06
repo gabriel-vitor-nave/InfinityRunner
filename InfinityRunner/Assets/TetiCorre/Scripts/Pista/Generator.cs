@@ -51,7 +51,7 @@ namespace TetiCorre
 
         private void Awake()
         {
-            int segmentosTotais = config.segmentosNaFrente + config.segmentosAtras + 2;
+            int segmentosTotais = config.segmentosNaFrente + Mathf.Max(3, config.segmentosAtras) + 2;
 
             // Pais organizados na Hierarchy (só pra ficar arrumado na cena).
             Transform paiSegmentos = CriarPai("Segmentos");
@@ -114,7 +114,8 @@ namespace TetiCorre
             }
 
             // Recicla os que ficaram pra trás (com uma folga pra câmera não ver sumindo).
-            float limiteAtras = zJogador - comprimento * config.segmentosAtras;
+            bool menu = GameManager.Instancia != null && GameManager.Instancia.Estado == EstadoDoJogo.Menu;
+            float limiteAtras = zJogador - comprimento * (menu ? Mathf.Max(3, config.segmentosAtras) : config.segmentosAtras);
             while (segmentosAtivos.Count > 0 && segmentosAtivos.Peek().InicioZ + comprimento < limiteAtras)
             {
                 segmentosAtivos.Dequeue().Reciclar();
@@ -129,7 +130,10 @@ namespace TetiCorre
                 segmentosAtivos.Dequeue().Reciclar();
             }
 
-            proximoZ = jogador.position.z - config.comprimentoSegmento * config.segmentosAtras;
+            // A câmera do menu olha para trás; esse fundo extra é reciclado ao correr.
+            int atras = GameManager.Instancia != null && GameManager.Instancia.Estado == EstadoDoJogo.Menu
+                ? Mathf.Max(3, config.segmentosAtras) : config.segmentosAtras;
+            proximoZ = jogador.position.z - config.comprimentoSegmento * atras;
             segmentosGerados = 0;
             faixaLivre = 0;
 
@@ -147,7 +151,7 @@ namespace TetiCorre
             segmentosAtivos.Enqueue(segmento);
 
             // Os segmentos atrás do início + os primeiros na frente ficam vazios.
-            bool podeTerObstaculos = segmentosGerados >= config.segmentosAtras + config.segmentosSemObstaculo;
+            bool podeTerObstaculos = proximoZ >= config.comprimentoSegmento * config.segmentosSemObstaculo;
             int obstaculosRestantes = 3;
             for (int i = 0; i < posicoesDasLinhas.Length; i++)
             {

@@ -22,7 +22,7 @@ namespace TetiCorre
 
         [Header("Sensação de controle")]
         [Tooltip("Se apertar pular um pouquinho antes de encostar no chão, o pulo ainda conta (segundos).")]
-        [SerializeField] private float toleranciaPulo = 0.15f;
+        [SerializeField] private float toleranciaPulo = 0.25f;
 
         // -1 = esquerda, 0 = meio, 1 = direita
         private int faixaAtual;
@@ -31,6 +31,7 @@ namespace TetiCorre
         private bool descidaRapida;
         private bool controlavel;
         private float tempoDesdePedidoDePulo = float.MaxValue;
+        private float tempoDesdeInicioPulo = float.MaxValue;
         private float tempoImaRestante;
 
         private bool arrastando;
@@ -139,6 +140,7 @@ namespace TetiCorre
 
             // Pulo "guardado": se apertou pouco antes de pousar, pula assim que pousar.
             tempoDesdePedidoDePulo += dt;
+            tempoDesdeInicioPulo += dt;
             if (controlavel && noChao && tempoDesdePedidoDePulo <= toleranciaPulo)
             {
                 Pular();
@@ -178,6 +180,7 @@ namespace TetiCorre
             tempoDesdePedidoDePulo = float.MaxValue;
             noChao = false;
             descidaRapida = false;
+            tempoDesdeInicioPulo = 0f;
             velocidadeVertical = config.VelocidadeDoPuloEm(GameManager.Instancia.Velocidade);
             animacao.Pular();
             AudioManager.Instancia.TocarPulo();
@@ -299,8 +302,12 @@ namespace TetiCorre
             {
                 ima.Coletar();
             }
-            else if (outro.GetComponentInParent<Obstaculo>() != null)
+            else if (outro.GetComponentInParent<Obstaculo>() is Obstaculo obstaculo)
             {
+                // Pequena folga na saída do salto evita morrer na quina de um
+                // carro baixo quando o comando foi dado bem perto dele.
+                if (obstaculo.Tipo == TipoObstaculo.Pulavel && !noChao
+                    && velocidadeVertical > 0f && tempoDesdeInicioPulo <= .075f) return;
                 GameManager.Instancia.JogadorBateu();
             }
         }

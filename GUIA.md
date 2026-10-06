@@ -56,6 +56,36 @@ gerado pela montagem. Os comentários estão em português para facilitar a
 explicação. Use IA como apoio e experimente mudar um valor de cada vez para
 entender o efeito no jogo.
 
+O salto começa com 3 m de altura e chega a 4,2 m na velocidade máxima.
+Os arcos de moedas usam a mesma gravidade e velocidade do salto: conforme a
+corrida acelera, as moedas ficam mais altas e mais espaçadas. A integração do
+pulo considera a aceleração durante todo o frame, para não perder altura quando
+o FPS cai. O comando pode ficar guardado por 0,25 s antes da aterrissagem.
+
+A cápsula da Teti tem raio de 0,22 m. As hitboxes dos veículos ocupam 78% da
+largura e altura e 82% do comprimento do modelo, deixando folga nas bordas.
+Carros baixos permitem uma tolerância de 0,075 s no começo do salto; essa folga
+não se aplica aos veículos altos.
+
+## Desempenho e iluminação
+
+`VisibilidadePorDistancia` desliga detalhes além de 55 m, usa silhuetas simples
+para os prédios até 115 m e desliga os itens da pista além de 75 m. Durante a
+corrida, objetos mais de 18 m atrás deixam de renderizar. As verificações ficam
+centralizadas em `AmbienteDaCorrida`, a cada 0,2 s; os objetos são reutilizados.
+As sombras alcançam somente 25 m. Materiais compartilhados permitem instancing,
+e o apoio dos pés calcula apenas os pontos das solas, sem reconstruir a malha
+inteira da Teti a cada frame.
+
+O shader `CidadeCurva` abaixa o cenário depois de 35 m, escondendo a geração no
+horizonte. A curvatura é visual; a física perto do jogador continua plana.
+Distâncias e intensidade da curva ficam no asset de configuração.
+
+O ciclo usa tempo de corrida: 60 s de dia, 60 s de noite, 120 s de dia, 120 s
+de noite, 240 s de dia e assim por diante. A transição dura 8 s. À noite,
+os postes ficam iluminados e até seis luzes próximas acendem; de dia apagam.
+Esses tempos também são configuráveis.
+
 ## Verificação antes da entrega
 
 Teste Play, três faixas, pulo sobre carro baixo, coleta, colisão, pausa automática, retorno ao

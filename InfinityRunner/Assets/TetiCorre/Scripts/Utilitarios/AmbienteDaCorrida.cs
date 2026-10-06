@@ -47,6 +47,7 @@ namespace TetiCorre
         {
             Shader.SetGlobalFloat("_TetiZ", jogador.position.z);
             var jogo = GameManager.Instancia;
+            Shader.SetGlobalFloat("_TetiSentidoCurva", jogo != null && jogo.Estado == EstadoDoJogo.Menu ? -1f : 1f);
             if (jogo != null && jogo.Estado == EstadoDoJogo.Jogando) AvancarCiclo(Time.deltaTime);
             if (Time.unscaledTime < proximaAtualizacao) return;
             proximaAtualizacao = Time.unscaledTime + .2f;

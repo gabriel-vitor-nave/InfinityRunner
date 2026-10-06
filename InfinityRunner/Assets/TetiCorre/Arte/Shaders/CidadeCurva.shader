@@ -17,16 +17,16 @@ Shader "TetiCorre/Cidade Curva"
         sampler2D _MainTex;
         fixed4 _Color;
         half3 _EmissionColor;
-        float _TetiZ, _TetiInicioCurva, _TetiForcaCurva, _TetiNoite;
+        float _TetiZ, _TetiInicioCurva, _TetiForcaCurva, _TetiNoite, _TetiSentidoCurva;
         struct Input { float2 uv_MainTex; };
         void vert(inout appdata_full v)
         {
             float3 mundo = mul(unity_ObjectToWorld, v.vertex).xyz;
-            float distancia = max(0, mundo.z - _TetiZ - _TetiInicioCurva);
+            float distancia = max(0, (mundo.z - _TetiZ) * _TetiSentidoCurva - _TetiInicioCurva);
             mundo.y -= distancia * distancia * _TetiForcaCurva;
             v.vertex = mul(unity_WorldToObject, float4(mundo, 1));
             float3 normal = UnityObjectToWorldNormal(v.normal);
-            normal.z += 2 * distancia * _TetiForcaCurva * normal.y;
+            normal.z += 2 * distancia * _TetiForcaCurva * _TetiSentidoCurva * normal.y;
             v.normal = mul((float3x3)transpose(unity_ObjectToWorld), normalize(normal));
         }
         void surf(Input IN, inout SurfaceOutput o)

@@ -26,8 +26,8 @@ Transform:
   m_GameObject: {fileID: 569383133601693413}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.5, z: 0}
-  m_LocalScale: {x: 2.8, y: 3, z: 7}
+  m_LocalPosition: {x: 0, y: 1.2099999, z: 0}
+  m_LocalScale: {x: 2.1839998, y: 2.34, z: 5.74}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3444281073031875515}
@@ -63,6 +63,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3444281073031875515}
   - component: {fileID: 1717195346477238166}
+  - component: {fileID: 2129866184740647702}
   m_Layer: 0
   m_Name: VeiculoAlto_2
   m_TagString: Untagged
@@ -101,6 +102,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 1
   comprimento: 7
+--- !u!114 &2129866184740647702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6997427535379438633}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e632f640cf21b144ead0219cf633230e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detalhes: []
+  simplificados: []
+  itemDaPista: 1
+  geraSombras: 1
 --- !u!1001 &4584296450936316556
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -165,6 +182,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 993432d7809c9bf489a5a96006618fef, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 99d647e78caf9024894a3eb50e301339, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -147,25 +147,21 @@ namespace TetiCorre.Editor
                         if (tempoJogo < .5f) return;
                         Exigir(Mathf.Abs(jogador.transform.position.x - jogo.Config.larguraFaixa) < .05f, "Faixa direita");
                         moedasAntes = jogo.Moedas;
-                        var moeda = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Moeda.prefab"));
-                        moeda.transform.position = jogador.CentroDoCorpo + Vector3.forward * .8f;
+                        var moeda = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Moeda.prefab"), jogador.CentroDoCorpo + Vector3.forward * .8f, Quaternion.identity);
                         Proxima(); break;
                     case 6:
                         if (tempoJogo < .3f) return;
                         Exigir(jogo.Moedas > moedasAntes, "Coleta por trigger");
-                        var moedaDistante = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Moeda.prefab"));
-                        moedaDistante.transform.position = jogador.CentroDoCorpo + Vector3.forward * 8;
+                        var moedaDistante = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Moeda.prefab"), jogador.CentroDoCorpo + Vector3.forward * 8, Quaternion.identity);
                         Physics.SyncTransforms(); int total = jogo.Moedas;
                         Comando(jogador, "VerificarTrajeto", jogador.transform.position, jogador.transform.position + Vector3.forward * 12);
                         Exigir(jogo.Moedas > total, "Coleta ao atravessar o trajeto de um frame longo");
-                        var ima = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Ima.prefab"));
-                        ima.transform.position = jogador.CentroDoCorpo + Vector3.forward * .8f;
+                        var ima = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Ima.prefab"), jogador.CentroDoCorpo + Vector3.forward * .8f, Quaternion.identity);
                         Proxima(); break;
                     case 7:
                         if (tempoJogo < .3f) return;
                         Exigir(jogador.ImaAtivo, "Ímã por trigger");
-                        var obstaculo = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Vagao.prefab"));
-                        obstaculo.transform.position = jogador.transform.position + Vector3.forward * 3;
+                        var obstaculo = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Vagao.prefab"), jogador.transform.position + Vector3.forward * 3, Quaternion.identity);
                         Proxima(); break;
                     case 8:
                         if (tempoJogo < .4f) return;
@@ -216,12 +212,19 @@ namespace TetiCorre.Editor
                         if (jogo.Estado != EstadoDoJogo.Menu) return;
                         jogo.Jogar(); typeof(GameManager).GetProperty("Velocidade").SetValue(jogo, jogo.Config.velocidadeMaxima);
                         VerificarArcos(jogo);
+                        var carroLateral = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Barreira.prefab"), new Vector3(0, 0, 4), Quaternion.identity);
+                        Physics.SyncTransforms();
+                        Comando(jogador, "VerificarTrajeto", new Vector3(1.4f, 0, 0), new Vector3(1.4f, 0, 8));
+                        Exigir(jogo.Estado == EstadoDoJogo.Jogando, "Folga lateral da hitbox do carro");
+                        UnityEngine.Object.DestroyImmediate(carroLateral);
+                        UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/TetiCorre/Gerados/Barreira.prefab"), new Vector3(0, 0, 3), Quaternion.identity);
                         Comando(jogador, "PedirPulo"); alturaObservada = 0f; Proxima(); break;
                     case 16:
                         alturaObservada = Mathf.Max(alturaObservada, jogador.transform.position.y);
                         if (tempoJogo < jogo.Config.TempoNoArEm(jogo.Velocidade) + .15f) return;
                         Exigir(alturaObservada > alturaPuloInicial + .5f && jogador.transform.position.y < .05f, "Pulo cresce com a velocidade e aterrissa");
-                        Terminar(true, "Jogabilidade, apoio dos pés, limites de renderização e sombras, pulo proporcional à velocidade, arcos de moedas e ciclo dia/noite passaram."); break;
+                        Exigir(jogo.Estado == EstadoDoJogo.Jogando && jogador.transform.position.z > 8f, "Salto perto do carro na velocidade máxima");
+                        Terminar(true, "Jogabilidade, hitbox lateral com folga, salto perto do carro na velocidade máxima, apoio dos pés, limites de renderização e sombras, arcos de moedas e ciclo dia/noite passaram."); break;
                 }
             }
             catch (Exception e) { Terminar(false, e.ToString()); }

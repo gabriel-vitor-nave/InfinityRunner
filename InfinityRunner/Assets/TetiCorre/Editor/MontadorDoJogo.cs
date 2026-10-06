@@ -108,7 +108,7 @@ namespace TetiCorre.Editor
             var jogador = jogadorObj.GetComponent<PlayerMovement>();
             if (jogador == null) jogador = jogadorObj.AddComponent<PlayerMovement>();
             var capsula = jogadorObj.GetComponent<CapsuleCollider>();
-            capsula.height = 1.7f; capsula.radius = .3f; capsula.center = new Vector3(0, .85f, 0);
+            capsula.height = 1.5f; capsula.radius = .22f; capsula.center = new Vector3(0, .8f, 0);
             var modeloAsset = AssetDatabase.LoadAssetAtPath<GameObject>(Raiz + "/Arte/Modelos/Teti/TetiFiluz@Running.fbx");
             if (modeloAsset == null) throw new InvalidOperationException("Modelo da Teti não encontrado.");
             var modelo = (GameObject)PrefabUtility.InstantiatePrefab(prefabJogador != null ? prefabJogador : modeloAsset, jogadorObj.transform);
@@ -158,6 +158,7 @@ namespace TetiCorre.Editor
             Ligar(ambiente, "luzDosPostes", Material("Lampadas", new Color(.9f, .83f, .65f)));
             Shader.SetGlobalFloat("_TetiZ", 0f); Shader.SetGlobalFloat("_TetiInicioCurva", config.inicioCurvatura);
             Shader.SetGlobalFloat("_TetiForcaCurva", config.forcaCurvatura); Shader.SetGlobalFloat("_TetiNoite", 0f);
+            Shader.SetGlobalFloat("_TetiSentidoCurva", -1f);
             var gerador = new GameObject("Gerador").AddComponent<Generator>();
             Ligar(gerador, "config", config); Ligar(gerador, "jogador", jogadorObj.transform);
             LigarArray(gerador, "prefabsSegmento", segmento);
@@ -376,17 +377,17 @@ namespace TetiCorre.Editor
         {
             var preview = new GameObject("Cenário visível no Editor (preview)");
             preview.AddComponent<PreviewDaPista>();
-            for (int i = 0; i < 4; i++)
+            for (int i = -3; i < 4; i++)
             {
                 var setor = (GameObject)PrefabUtility.InstantiatePrefab(segmento.gameObject, preview.transform);
-                setor.name = "Setor " + (i + 1) + " — 10,5 x 50";
+                setor.name = "Setor " + (i + 4) + " — 10,5 x 50";
                 setor.transform.localPosition = Vector3.forward * (i * 50);
                 for (int z = 5; z < 50; z += 3)
                 {
                     var obj = (GameObject)PrefabUtility.InstantiatePrefab(moeda.gameObject, setor.transform);
                     obj.transform.localPosition = new Vector3(0, .9f, z);
                 }
-                if (i == 0) continue;
+                if (i <= 0) continue;
                 for (int n = 0; n < 3; n++)
                 {
                     var asset = n % 2 == 0 ? barreira.gameObject : vagao.gameObject;
@@ -535,6 +536,10 @@ namespace TetiCorre.Editor
         {
             var obj = new GameObject(nome); var obstaculo = obj.AddComponent<Obstaculo>();
             Cubo(nome, obj.transform, new Vector3(0, tamanho.y / 2, 0), tamanho, mat, true);
+            var hitbox = obj.GetComponentInChildren<BoxCollider>();
+            var tamanhoHitbox = new Vector3(tamanho.x * .78f, tamanho.y * .78f, tamanho.z * .82f);
+            hitbox.transform.localScale = tamanhoHitbox;
+            hitbox.transform.localPosition = Vector3.up * (tamanhoHitbox.y * .5f + .04f);
             UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshRenderer>());
             UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshFilter>());
             ModeloImportado("Vehicles/Vehicle with Static Wheels/" + veiculo + ".prefab", obj.transform, Vector3.zero, tamanho);

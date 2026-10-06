@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 739179081564898278}
   - component: {fileID: 8567128143165445697}
   - component: {fileID: 5495388110957308994}
+  - component: {fileID: 7135114035201523339}
   - component: {fileID: 5969750279411336836}
   m_Layer: 0
   m_Name: Ima
@@ -106,6 +107,22 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7135114035201523339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2309702149368004739}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e632f640cf21b144ead0219cf633230e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detalhes: []
+  simplificados: []
+  itemDaPista: 1
+  geraSombras: 0
 --- !u!114 &5969750279411336836
 MonoBehaviour:
   m_ObjectHideFlags: 0

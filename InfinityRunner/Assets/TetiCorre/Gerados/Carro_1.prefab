@@ -26,8 +26,8 @@ Transform:
   m_GameObject: {fileID: 4494084163841288339}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.55, z: 0}
-  m_LocalScale: {x: 2.6, y: 1.1, z: 4.5}
+  m_LocalPosition: {x: 0, y: 0.46899998, z: 0}
+  m_LocalScale: {x: 2.0279999, y: 0.858, z: 3.69}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 426897962725679533}
@@ -63,6 +63,7 @@ GameObject:
   m_Component:
   - component: {fileID: 426897962725679533}
   - component: {fileID: 4141385282181738689}
+  - component: {fileID: 5847786751561538786}
   m_Layer: 0
   m_Name: Carro_1
   m_TagString: Untagged
@@ -101,6 +102,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 0
   comprimento: 4.5
+--- !u!114 &5847786751561538786
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9026759670216851425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e632f640cf21b144ead0219cf633230e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detalhes: []
+  simplificados: []
+  itemDaPista: 1
+  geraSombras: 1
 --- !u!1001 &2198473730170258876
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -165,6 +182,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 81835658bbd378143a0f525b8552f557, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 10b39a82c5702814d86c2d3963e505bb, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

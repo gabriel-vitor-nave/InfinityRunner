@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8298124219848250235}
   - component: {fileID: 8902913845022654373}
+  - component: {fileID: 4459963216868235773}
   m_Layer: 0
   m_Name: Carro_4
   m_TagString: Untagged
@@ -48,6 +49,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tipo: 0
   comprimento: 4.5
+--- !u!114 &4459963216868235773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4927138405822655423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e632f640cf21b144ead0219cf633230e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  detalhes: []
+  simplificados: []
+  itemDaPista: 1
+  geraSombras: 1
 --- !u!1 &6595080394038573997
 GameObject:
   m_ObjectHideFlags: 0
@@ -74,8 +91,8 @@ Transform:
   m_GameObject: {fileID: 6595080394038573997}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.55, z: 0}
-  m_LocalScale: {x: 2.6, y: 1.1, z: 4.5}
+  m_LocalPosition: {x: 0, y: 0.46899998, z: 0}
+  m_LocalScale: {x: 2.0279999, y: 0.858, z: 3.69}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8298124219848250235}
@@ -165,6 +182,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2300000, guid: 1af0a2c8773f85c40bdb120f32cd8a8a, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 454be7d918f412c47b0b7163856f50d6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
