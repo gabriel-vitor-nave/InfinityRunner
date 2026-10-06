@@ -6,7 +6,7 @@ de queda termina e a cena volta ao menu sem recarregar.
 
 ## Os seis requisitos da atividade
 
-| Requisito | Código em `InfinityRunner/Assets/TetiCorre/Scripts/` | Como funciona |
+| Requisito | Código em `InfinityRunner/Assets/UJOGOTODO/Scripts/` | Como funciona |
 | --- | --- | --- |
 | Correr constantemente para frente | `Jogador/PlayerMovement.cs`, `Gerenciadores/GameManager.cs` | O eixo Z aumenta com a velocidade multiplicada por `Time.deltaTime`. |
 | Pular | `Jogador/PlayerMovement.cs`, `Gerenciadores/ConfiguracaoDoJogo.cs` | Velocidade vertical inicial e gravidade produzem o arco do pulo; Y volta a zero ao pousar. |
@@ -35,7 +35,7 @@ seus itens quando fica para trás. Isso evita criar uma pista inteira nova a cad
 partida e mantém a quantidade de segmentos limitada durante a corrida.
 
 A velocidade aumenta por `aceleracao` até `velocidadeMaxima`. Esses valores são
-configuráveis em `Assets/TetiCorre/Gerados/Configuracao.asset` no Inspector.
+configuráveis em `Assets/UJOGOTODO/Gerados/Configuracao.asset` no Inspector.
 O padrão é começar a 10 m/s e limitar a 24 m/s. A neblina esconde a borda distante
 enquanto os próximos setores já ficam preparados além do alcance da câmera.
 

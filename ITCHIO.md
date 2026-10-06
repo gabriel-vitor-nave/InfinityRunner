@@ -25,15 +25,17 @@ apagar o recorde.
 
 ## Upload
 
-Após validar o build no navegador, compacte todos os arquivos de `Builds/WebGL/`
-com `index.html` na raiz do ZIP. Crie um projeto do tipo HTML no itch.io e marque
-o ZIP como jogável no navegador. A documentação oficial explica o formato e
+O menu de build já gera `Builds/TetiCorre-WebGL.zip`, com `index.html` na raiz.
+Crie um projeto do tipo **HTML Game** no itch.io, envie esse ZIP e marque
+o arquivo como jogável no navegador. Para incorporar na página, use **960 × 640**
+e mantenha **Click to Play** ligado; também pode usar lançamento em tela cheia.
+A documentação oficial explica o formato e
 as opções de incorporação: [Uploading HTML5 games](https://itch.io/docs/creators/html5).
 
-Use inicialmente uma página de acesso restrito para testar o carregamento,
-controles, áudio após clicar em Jogar e o recorde. Só publique a versão que
-passou pelos testes. Disponibilize o `.unitypackage` como download separado
-quando as permissões de distribuição dos assets estiverem verificadas.
+A versão atual foi testada no navegador por HTTP, incluindo menu, corrida,
+coleta, troca de faixa, salto, colisão, retorno ao menu, tela cheia e persistência
+do recorde após recarregar. Confira a prévia do itch.io antes de publicar.
+O `.unitypackage` é um arquivo separado do ZIP jogável.
 
 ## Créditos a conferir
 

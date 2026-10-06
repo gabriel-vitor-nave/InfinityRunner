@@ -4,7 +4,7 @@ namespace TetiCorre
 {
     // Todos os números que controlam o "feeling" do jogo ficam aqui, num asset (ScriptableObject).
     // Assim dá pra ajustar velocidade, pulo, dificuldade etc. pelo Inspector, sem mexer no código.
-    // O asset fica em Assets/TetiCorre/Gerados/Configuracao.asset.
+    // O asset fica em Assets/UJOGOTODO/Gerados/Configuracao.asset.
     [CreateAssetMenu(fileName = "ConfiguracaoDoJogo", menuName = "Teti Corre/Configuração do Jogo")]
     public class ConfiguracaoDoJogo : ScriptableObject
     {
