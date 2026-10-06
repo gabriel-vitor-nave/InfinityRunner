@@ -10,7 +10,7 @@ namespace TetiCorre
     {
         [Header("Faixas")]
         [Tooltip("Distância (em metros) entre o centro de uma faixa e a outra.")]
-        public float larguraFaixa = 2.5f;
+        public float larguraFaixa = 3.5f;
         [Tooltip("Velocidade lateral (m/s) ao trocar de faixa.")]
         public float velocidadeTrocaFaixa = 16f;
 
@@ -30,7 +30,7 @@ namespace TetiCorre
 
         [Header("Pista")]
         [Tooltip("Comprimento de cada pedaço (segmento) da pista. Tem que bater com o prefab do segmento.")]
-        public float comprimentoSegmento = 30f;
+        public float comprimentoSegmento = 50f;
         [Tooltip("Quantos segmentos ficam prontos na frente do jogador.")]
         public int segmentosNaFrente = 6;
         [Tooltip("Quantos segmentos ficam atrás (aparecem de fundo no menu).")]

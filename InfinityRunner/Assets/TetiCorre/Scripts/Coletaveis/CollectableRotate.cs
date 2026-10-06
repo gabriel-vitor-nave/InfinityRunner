@@ -28,6 +28,9 @@ namespace TetiCorre
 
         private void OnEnable()
         {
+            // Prefabs antigos giram o próprio objeto. Ao reutilizar pelo pool,
+            // a altura deve partir da nova posição, e não da posição do prefab.
+            if (visual == transform) alturaBase = transform.localPosition.y;
             // Fase aleatória pra fileira de moedas não subir e descer toda sincronizada.
             fase = Random.value * Mathf.PI * 2f;
         }

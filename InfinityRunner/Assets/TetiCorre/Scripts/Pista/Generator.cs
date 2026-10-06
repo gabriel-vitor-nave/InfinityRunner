@@ -32,9 +32,9 @@ namespace TetiCorre
         [SerializeField] private int moedasPorFileira = 5;
         [SerializeField] private float espacoEntreMoedas = 2.5f;
 
-        // Cada segmento tem 2 "linhas" de obstáculos: em 1/4 e em 3/4 do comprimento.
-        // Com segmentos de 30 m, as linhas ficam a cada 15 m, o que dá tempo de reagir mesmo na velocidade máxima.
-        private static readonly float[] posicoesDasLinhas = { 0.25f, 0.75f };
+        // Cada setor de 50 m tem três pontos de distribuição, separados por 15 m.
+        // O orçamento abaixo permite no máximo três veículos no setor inteiro.
+        private static readonly float[] posicoesDasLinhas = { 0.2f, 0.5f, 0.8f };
 
         private ObjectPool<Segmento>[] poolsSegmento;
         private ObjectPool<ItemDaPista>[] poolsBarreira;
@@ -148,12 +148,11 @@ namespace TetiCorre
 
             // Os segmentos atrás do início + os primeiros na frente ficam vazios.
             bool podeTerObstaculos = segmentosGerados >= config.segmentosAtras + config.segmentosSemObstaculo;
-            if (podeTerObstaculos)
+            int obstaculosRestantes = 3;
+            for (int i = 0; i < posicoesDasLinhas.Length; i++)
             {
-                for (int i = 0; i < posicoesDasLinhas.Length; i++)
-                {
-                    GerarLinha(segmento, proximoZ + config.comprimentoSegmento * posicoesDasLinhas[i]);
-                }
+                GerarLinha(segmento, proximoZ + config.comprimentoSegmento * posicoesDasLinhas[i],
+                    podeTerObstaculos, ref obstaculosRestantes);
             }
 
             proximoZ += config.comprimentoSegmento;
@@ -161,7 +160,7 @@ namespace TetiCorre
         }
 
         // Uma "linha" = uma posição Z onde cada uma das 3 faixas pode ter obstáculo, moedas ou nada.
-        private void GerarLinha(Segmento segmento, float z)
+        private void GerarLinha(Segmento segmento, float z, bool podeTerObstaculos, ref int obstaculosRestantes)
         {
             float dificuldade = Mathf.Clamp01(z / config.distanciaDificuldadeMaxima);
             float chanceObstaculo = Mathf.Lerp(config.chanceObstaculoInicial, config.chanceObstaculoMaxima, dificuldade);
@@ -169,7 +168,7 @@ namespace TetiCorre
 
             // REGRA DE OURO: a faixa livre só muda no máximo 1 faixa por linha.
             // Assim o jogador sempre consegue chegar nela a tempo, e nunca existe uma linha impossível.
-            faixaLivre = Mathf.Clamp(faixaLivre + Random.Range(-1, 2), -1, 1);
+            faixaLivre = podeTerObstaculos ? Mathf.Clamp(faixaLivre + Random.Range(-1, 2), -1, 1) : 0;
 
             for (int faixa = -1; faixa <= 1; faixa++)
             {
@@ -178,17 +177,15 @@ namespace TetiCorre
                 if (faixa == faixaLivre)
                 {
                     // Esta faixa nunca recebe obstáculos: há sempre uma rota por desvio.
+                    ColocarFileiraDeMoedas(segmento, x, z);
                     if (Random.value < config.chanceIma)
                     {
                         ColocarItem(segmento, poolIma, new Vector3(x, alturaMoeda, z));
                     }
-                    else if (Random.value < config.chanceFileiraDeMoedas)
-                    {
-                        ColocarFileiraDeMoedas(segmento, x, z);
-                    }
                 }
-                else if (Random.value < chanceObstaculo)
+                else if (podeTerObstaculos && obstaculosRestantes > 0 && Random.value < chanceObstaculo)
                 {
+                    obstaculosRestantes--;
                     if (Random.value < chanceVagao)
                     {
                         ColocarObstaculo(segmento, poolsVagao, x, z);

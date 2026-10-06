@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4c7e33843013482cba7831562a86f503, type: 3}
+  m_Name: Configuracao
+  m_EditorClassIdentifier: 
+  larguraFaixa: 3.5
+  velocidadeTrocaFaixa: 16
+  velocidadeInicial: 10
+  velocidadeMaxima: 24
+  aceleracao: 0.18
+  alturaPulo: 2.2
+  gravidade: -40
+  gravidadeDescidaRapida: -140
+  comprimentoSegmento: 50
+  segmentosNaFrente: 6
+  segmentosAtras: 2
+  segmentosSemObstaculo: 2
+  distanciaDificuldadeMaxima: 1500
+  chanceObstaculoInicial: 0.35
+  chanceObstaculoMaxima: 0.8
+  chanceVagaoInicial: 0.3
+  chanceVagaoMaxima: 0.6
+  chanceBarreiraNaFaixaLivre: 0.35
+  centavosPorMoeda: 1
+  chanceFileiraDeMoedas: 0.7
+  chanceMoedasEmOutraFaixa: 0.25
+  chanceIma: 0.06
+  duracaoIma: 10
+  raioIma: 8
+  tempoAteVoltarAoMenu: 2.5

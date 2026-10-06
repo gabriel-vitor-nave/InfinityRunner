@@ -37,6 +37,7 @@ namespace TetiCorre
         private Vector2 inicioArrasto;
 
         private CapsuleCollider capsula;
+        private readonly RaycastHit[] impactos = new RaycastHit[32];
 
         public bool ImaAtivo => tempoImaRestante > 0f;
         public float FracaoImaRestante => Mathf.Clamp01(tempoImaRestante / config.duracaoIma);
@@ -124,6 +125,10 @@ namespace TetiCorre
                 }
             }
 
+            // Verifica o trajeto inteiro: em FPS baixo, só testar a posição final
+            // permitiria atravessar uma moeda ou barreira entre dois frames.
+            if (controlavel && GameManager.Instancia.Estado == EstadoDoJogo.Jogando)
+                VerificarTrajeto(transform.position, posicao);
             transform.position = posicao;
 
             if (controlavel && dt > 0f)
@@ -256,9 +261,32 @@ namespace TetiCorre
 
         // ---------- Colisões ----------
 
+        private void VerificarTrajeto(Vector3 inicio, Vector3 fim)
+        {
+            Vector3 movimento = fim - inicio;
+            float distancia = movimento.magnitude;
+            if (distancia < .0001f) return;
+            Vector3 centro = inicio + capsula.center;
+            float metade = Mathf.Max(0, capsula.height * .5f - capsula.radius);
+            int quantidade = Physics.CapsuleCastNonAlloc(centro + Vector3.up * metade,
+                centro - Vector3.up * metade, capsula.radius, movimento / distancia,
+                impactos, distancia, ~0, QueryTriggerInteraction.Collide);
+            // Ordenação pequena, sem alocar: uma barreira deve bloquear as moedas atrás dela.
+            for (int i = 0; i < quantidade; i++)
+                for (int j = i + 1; j < quantidade; j++)
+                    if (impactos[j].distance < impactos[i].distance)
+                    { var troca = impactos[i]; impactos[i] = impactos[j]; impactos[j] = troca; }
+            for (int i = 0; i < quantidade && controlavel; i++)
+            {
+                var collider = impactos[i].collider;
+                if (collider != null && collider != capsula && collider.gameObject.activeInHierarchy)
+                    OnTriggerEnter(collider);
+            }
+        }
+
         private void OnTriggerEnter(Collider outro)
         {
-            if (!controlavel) return;
+            if (!controlavel || GameManager.Instancia.Estado != EstadoDoJogo.Jogando) return;
 
             // Identificamos pelo COMPONENTE (e não por Tag), assim funciona em qualquer projeto
             // onde o .unitypackage for importado, mesmo sem as tags configuradas.

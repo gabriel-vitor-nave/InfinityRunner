@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using TMPro;
 using UnityEditor;
@@ -23,6 +24,7 @@ namespace TetiCorre.Editor
         [MenuItem("InfinityRunner/Montar Jogo")]
         public static void Montar()
         {
+            if (PrepararRecursos(Montar)) return;
             if (!Application.isBatchMode && !EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             // Cria uma cena nova em memória antes de salvar; não modifica outras cenas.
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -32,13 +34,17 @@ namespace TetiCorre.Editor
                 .Select(AssetDatabase.LoadAssetAtPath<TMP_FontAsset>).FirstOrDefault();
             if (fonte == null)
             {
-                var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                var font = AssetDatabase.FindAssets("t:Font").Select(AssetDatabase.GUIDToAssetPath)
+                    .Select(AssetDatabase.LoadAssetAtPath<Font>).FirstOrDefault();
+                if (font == null) throw new InvalidOperationException("Importe os recursos essenciais de TextMesh Pro.");
                 fonte = TMP_FontAsset.CreateFontAsset(font);
                 AssetDatabase.CreateAsset(fonte, Gerados + "/Fonte.asset");
                 AssetDatabase.AddObjectToAsset(fonte.material, fonte);
                 foreach (var atlas in fonte.atlasTextures) AssetDatabase.AddObjectToAsset(atlas, fonte);
             }
             var config = Asset<ConfiguracaoDoJogo>("Configuracao.asset");
+            config.comprimentoSegmento = 50f; config.larguraFaixa = 3.5f;
+            EditorUtility.SetDirty(config);
             var asfalto = Material("Asfalto", new Color(.13f, .18f, .25f));
             var azul = Material("Azul", new Color(.1f, .55f, .8f));
             var amarelo = Material("Ouro", new Color(1f, .72f, .12f));
@@ -47,28 +53,41 @@ namespace TetiCorre.Editor
 
             var segmentoObj = new GameObject("Segmento");
             var segmento = segmentoObj.AddComponent<Segmento>();
-            Cubo("Pista", segmentoObj.transform, new Vector3(0, -.2f, 15), new Vector3(9, .4f, 30), asfalto);
-            foreach (float x in new[] { -1.25f, 1.25f })
-                for (int z = 1; z < 30; z += 4)
+            Cubo("Pista 10,5 x 50", segmentoObj.transform, new Vector3(0, -.2f, 25), new Vector3(10.5f, .4f, 50), asfalto);
+            for (int z = 5; z < 50; z += 10)
+                ModeloImportado("Roads/Road Lane_03.prefab", segmentoObj.transform,
+                    new Vector3(0, -.06f, z), new Vector3(10.5f, .06f, 10));
+            foreach (float x in new[] { -1.75f, 1.75f })
+                for (int z = 1; z < 50; z += 4)
                     Cubo("Marca", segmentoObj.transform, new Vector3(x, .015f, z), new Vector3(.08f, .02f, 2), branco);
-            foreach (float x in new[] { -7f, 7f })
-                for (int z = 3; z < 30; z += 10)
-                    Cubo("Predio", segmentoObj.transform, new Vector3(x, 3, z), new Vector3(3, 6, 5), azul);
+            CriarCidade(segmentoObj.transform);
             segmento = SalvarPrefab(segmento, "Segmento");
-            var barreira = CriarObstaculo("Barreira", new Vector3(1.8f, .8f, .8f), vermelho, TipoObstaculo.Pulavel);
-            var vagao = CriarObstaculo("Vagao", new Vector3(1.9f, 3, 5), azul, TipoObstaculo.SoDesviar);
+            string[] carros = { "Vehicle_Car_color01", "Vehicle_Car_color02", "Vehicle_Car_color03", "Vehicle_Taxi", "Vehicle_Police Car", "Vehicle_SUV_color02" };
+            var carrosBaixos = carros.Select((nome, i) => CriarObstaculo(i == 0 ? "Barreira" : "Carro_" + i,
+                new Vector3(2.6f, 1.1f, 4.5f), vermelho, TipoObstaculo.Pulavel, nome)).ToArray();
+            string[] grandes = { "Vehicle_Bus_color01", "Vehicle_Bus_color02", "Vehicle_Truck_color03" };
+            var carrosAltos = grandes.Select((nome, i) => CriarObstaculo(i == 0 ? "Vagao" : "VeiculoAlto_" + i,
+                new Vector3(2.8f, 3, 7), azul, TipoObstaculo.SoDesviar, nome)).ToArray();
+            var barreira = carrosBaixos[0]; var vagao = carrosAltos[0];
             var moedaObj = new GameObject("Moeda");
             var moeda = moedaObj.AddComponent<Moeda>();
             moedaObj.AddComponent<SphereCollider>().radius = .38f;
             moedaObj.GetComponent<SphereCollider>().isTrigger = true;
-            var disco = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            var modeloMoeda = AssetDatabase.LoadAssetAtPath<GameObject>(Raiz + "/Arte/Modelos/Moeda/Moeda.fbx");
+            var disco = modeloMoeda != null ? (GameObject)PrefabUtility.InstantiatePrefab(modeloMoeda) : GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             disco.name = "Disco";
             disco.transform.SetParent(moedaObj.transform, false);
-            disco.transform.localScale = new Vector3(.6f, .07f, .6f);
-            disco.transform.localRotation = Quaternion.Euler(90, 0, 0);
-            UnityEngine.Object.DestroyImmediate(disco.GetComponent<Collider>());
-            disco.GetComponent<Renderer>().sharedMaterial = amarelo;
-            moedaObj.AddComponent<CollectableRotate>();
+            AjustarModelo(disco, .65f, false);
+            foreach (var collider in disco.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
+            var materialMoeda = AssetDatabase.LoadAssetAtPath<Material>(Raiz + "/Arte/Materiais/Moeda/Moeda.mat");
+            if (materialMoeda != null)
+            {
+                // A textura antiga de normal é uma cópia da cor: não a usamos como relevo.
+                materialMoeda.SetTexture("_BumpMap", null); materialMoeda.DisableKeyword("_NORMALMAP");
+                EditorUtility.SetDirty(materialMoeda);
+            }
+            foreach (var renderer in disco.GetComponentsInChildren<Renderer>()) renderer.sharedMaterial = materialMoeda != null ? materialMoeda : amarelo;
+            var rotacao = moedaObj.AddComponent<CollectableRotate>(); Ligar(rotacao, "visual", disco.transform);
             moeda = SalvarPrefab(moeda, "Moeda");
             var imaObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             imaObj.name = "Ima";
@@ -77,15 +96,25 @@ namespace TetiCorre.Editor
             imaObj.GetComponent<Collider>().isTrigger = true;
             var ima = SalvarPrefab(imaObj.AddComponent<Ima>(), "Ima");
 
+            var prefabJogador = AssetDatabase.LoadAssetAtPath<GameObject>(Raiz + "/Prefabs/Jogador/Teti.prefab");
             var jogadorObj = new GameObject("Jogador");
-            var jogador = jogadorObj.AddComponent<PlayerMovement>();
+            jogadorObj.name = "Jogador — Teti";
+            var jogador = jogadorObj.GetComponent<PlayerMovement>();
+            if (jogador == null) jogador = jogadorObj.AddComponent<PlayerMovement>();
             var capsula = jogadorObj.GetComponent<CapsuleCollider>();
             capsula.height = 1.7f; capsula.radius = .3f; capsula.center = new Vector3(0, .85f, 0);
             var modeloAsset = AssetDatabase.LoadAssetAtPath<GameObject>(Raiz + "/Arte/Modelos/Teti/TetiFiluz@Running.fbx");
             if (modeloAsset == null) throw new InvalidOperationException("Modelo da Teti não encontrado.");
-            var modelo = (GameObject)PrefabUtility.InstantiatePrefab(modeloAsset, jogadorObj.transform);
+            var modelo = (GameObject)PrefabUtility.InstantiatePrefab(prefabJogador != null ? prefabJogador : modeloAsset, jogadorObj.transform);
+            // O modelo visual é o prefab INTEIRO: ossos e malhas têm de receber
+            // a mesma escala/posição. O controlador de movimento fica só no pai.
+            foreach (var componente in modelo.GetComponentsInChildren<PlayerMovement>()) UnityEngine.Object.DestroyImmediate(componente);
+            foreach (var componente in modelo.GetComponentsInChildren<Rigidbody>()) UnityEngine.Object.DestroyImmediate(componente);
+            foreach (var componente in modelo.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(componente);
             modelo.name = "Teti";
-            var animator = modelo.GetComponent<Animator>() ?? modelo.AddComponent<Animator>();
+            AjustarModelo(modelo, 1.7f, true);
+            var animator = modelo.GetComponentInChildren<Animator>();
+            if (animator == null) animator = modelo.AddComponent<Animator>();
             animator.applyRootMotion = false;
             animator.runtimeAnimatorController = CriarAnimacoes();
             var animacao = jogadorObj.AddComponent<AnimacaoDoJogador>();
@@ -95,20 +124,27 @@ namespace TetiCorre.Editor
             var cameraObj = new GameObject("Camera", typeof(Camera), typeof(AudioListener));
             cameraObj.tag = "MainCamera";
             var camera = cameraObj.GetComponent<Camera>();
-            camera.backgroundColor = new Color(.45f, .72f, .9f); camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(.45f, .72f, .9f); camera.clearFlags = CameraClearFlags.Skybox;
+            RenderSettings.skybox = AssetDatabase.LoadAssetAtPath<Material>("Assets/Pacotes/Day-Night Skyboxes/Materials/SkyBrightMorning.mat");
             camera.farClipPlane = 220;
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = camera.backgroundColor; RenderSettings.fogStartDistance = 100; RenderSettings.fogEndDistance = 200;
             var seguir = cameraObj.AddComponent<CameraFollow>(); Ligar(seguir, "alvo", jogadorObj.transform);
+            seguir.IrParaMenu();
             var luz = new GameObject("Sol", typeof(Light)).GetComponent<Light>();
             luz.type = LightType.Directional; luz.intensity = 1.2f; luz.transform.rotation = Quaternion.Euler(45, -30, 0);
             RenderSettings.ambientLight = new Color(.65f, .7f, .8f);
             var gerador = new GameObject("Gerador").AddComponent<Generator>();
             Ligar(gerador, "config", config); Ligar(gerador, "jogador", jogadorObj.transform);
             LigarArray(gerador, "prefabsSegmento", segmento);
-            LigarArray(gerador, "prefabsBarreira", barreira); LigarArray(gerador, "prefabsVagao", vagao);
+            LigarArray(gerador, "prefabsBarreira", carrosBaixos); LigarArray(gerador, "prefabsVagao", carrosAltos);
             Ligar(gerador, "prefabMoeda", moeda); Ligar(gerador, "prefabIma", ima);
+            CriarPreview(segmento, moeda, barreira, vagao);
             var audio = new GameObject("Audio").AddComponent<AudioManager>();
             string[] sons = { "musicaMenu", "musicaJogo", "somMoeda", "somPulo", "somTrocaDeFaixa", "somBatida", "somIma", "somClique", "somRecorde" };
             for (int i = 0; i < sons.Length; i++) Ligar(audio, sons[i], CriarSom(sons[i], 220 + i * 80, i < 2 ? 4f : .18f));
+            Ligar(audio, "musicaMenu", AssetDatabase.LoadAssetAtPath<AudioClip>(Raiz + "/Audio/Musicas/Musica_Menu.mp3"));
+            Ligar(audio, "musicaJogo", AssetDatabase.LoadAssetAtPath<AudioClip>(Raiz + "/Audio/Musicas/Musica_Jogo.mp3"));
             var efeitos = new GameObject("Efeitos").AddComponent<EfeitosVisuais>();
             Ligar(efeitos, "brilhoMoeda", Particulas("BrilhoMoeda", amarelo.color));
             Ligar(efeitos, "brilhoIma", Particulas("BrilhoIma", azul.color));
@@ -152,6 +188,87 @@ namespace TetiCorre.Editor
             return controller;
         }
 
+        private static void CriarCidade(Transform pai)
+        {
+            const string pasta = "Assets/Pacotes/SimplePoly City - Low Poly Assets/Prefab/Buildings";
+            var modelos = AssetDatabase.FindAssets("t:Prefab", new[] { pasta }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(p => p).ToArray();
+            if (modelos.Length == 0) throw new InvalidOperationException("Prefabs de cidade não encontrados.");
+            int indice = 0;
+            foreach (float lado in new[] { -1f, 1f })
+                for (int z = 5; z < 50; z += 10)
+                {
+                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelos[indice++ % modelos.Length]), pai);
+                    AjustarModelo(obj, 7f, true);
+                    obj.transform.localPosition += new Vector3(lado * 9f, 0, z);
+                    obj.transform.localRotation = Quaternion.Euler(0, lado > 0 ? -90 : 90, 0);
+                    foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
+                }
+            foreach (float lado in new[] { -1f, 1f })
+                for (int z = 8; z < 50; z += 15)
+                    ModeloImportado("Props/Props_Street Light.prefab", pai,
+                        new Vector3(lado * 5.8f, 0, z), new Vector3(.8f, 4, 1));
+        }
+
+        private static GameObject ModeloImportado(string caminho, Transform pai, Vector3 posicao, Vector3 tamanho)
+        {
+            const string pasta = "Assets/Pacotes/SimplePoly City - Low Poly Assets/Prefab/";
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(pasta + caminho);
+            if (asset == null) throw new InvalidOperationException("Prefab não encontrado: " + caminho);
+            var obj = (GameObject)PrefabUtility.InstantiatePrefab(asset, pai);
+            var renderers = obj.GetComponentsInChildren<Renderer>();
+            var bounds = renderers[0].bounds;
+            foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
+            var escala = obj.transform.localScale;
+            obj.transform.localScale = new Vector3(escala.x * tamanho.x / bounds.size.x,
+                escala.y * tamanho.y / bounds.size.y, escala.z * tamanho.z / bounds.size.z);
+            bounds = renderers[0].bounds;
+            foreach (var renderer in renderers) bounds.Encapsulate(renderer.bounds);
+            obj.transform.position -= new Vector3(bounds.center.x, bounds.min.y, bounds.center.z) - obj.transform.position;
+            obj.transform.localPosition += posicao;
+            foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
+            return obj;
+        }
+
+        private static void CriarPreview(Segmento segmento, Moeda moeda, Obstaculo barreira, Obstaculo vagao)
+        {
+            var preview = new GameObject("Cenário visível no Editor (preview)");
+            preview.AddComponent<PreviewDaPista>();
+            for (int i = 0; i < 4; i++)
+            {
+                var setor = (GameObject)PrefabUtility.InstantiatePrefab(segmento.gameObject, preview.transform);
+                setor.name = "Setor " + (i + 1) + " — 10,5 x 50";
+                setor.transform.localPosition = Vector3.forward * (i * 50);
+                for (int z = 5; z < 50; z += 3)
+                {
+                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(moeda.gameObject, setor.transform);
+                    obj.transform.localPosition = new Vector3(0, .9f, z);
+                }
+                if (i == 0) continue;
+                for (int n = 0; n < 3; n++)
+                {
+                    var asset = n % 2 == 0 ? barreira.gameObject : vagao.gameObject;
+                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(asset, setor.transform);
+                    obj.transform.localPosition = new Vector3(n % 2 == 0 ? -3.5f : 3.5f, 0, 10 + n * 15);
+                }
+            }
+        }
+
+        // Normaliza modelos com unidades e pivôs diferentes sem alterar seus arquivos de origem.
+        private static void AjustarModelo(GameObject obj, float altura, bool apoiarNoChao)
+        {
+            var renderers = obj.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return;
+            var limites = renderers[0].bounds;
+            foreach (var renderer in renderers) limites.Encapsulate(renderer.bounds);
+            float medida = apoiarNoChao ? limites.size.y : Mathf.Max(limites.size.x, limites.size.y, limites.size.z);
+            if (medida < .001f) return;
+            obj.transform.localScale *= altura / medida;
+            limites = renderers[0].bounds;
+            foreach (var renderer in renderers) limites.Encapsulate(renderer.bounds);
+            var deslocamento = new Vector3(limites.center.x, apoiarNoChao ? limites.min.y : limites.center.y, limites.center.z) - obj.transform.position;
+            obj.transform.position -= deslocamento;
+        }
+
         private static UIManager CriarInterface()
         {
             var canvasObj = new GameObject("Interface", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -189,6 +306,7 @@ namespace TetiCorre.Editor
             Ligar(ui, "botaoSom", som); Ligar(ui, "iconeSom", som.GetComponent<Image>());
             Ligar(ui, "spriteSomLigado", SpriteBranco()); Ligar(ui, "spriteSomDesligado", SpriteBranco());
             var fade = Painel("Transicao", canvasObj.transform); Fundo(fade.gameObject, Color.black); Ligar(ui, "telaPreta", fade);
+            hud.gameObject.SetActive(false); pausa.gameObject.SetActive(false); fade.gameObject.SetActive(false);
             return ui;
         }
 
@@ -261,10 +379,13 @@ namespace TetiCorre.Editor
             }
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
         }
-        private static Obstaculo CriarObstaculo(string nome, Vector3 tamanho, Material mat, TipoObstaculo tipo)
+        private static Obstaculo CriarObstaculo(string nome, Vector3 tamanho, Material mat, TipoObstaculo tipo, string veiculo)
         {
             var obj = new GameObject(nome); var obstaculo = obj.AddComponent<Obstaculo>();
             Cubo(nome, obj.transform, new Vector3(0, tamanho.y / 2, 0), tamanho, mat, true);
+            UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshRenderer>());
+            UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshFilter>());
+            ModeloImportado("Vehicles/Vehicle with Static Wheels/" + veiculo + ".prefab", obj.transform, Vector3.zero, tamanho);
             var s = new SerializedObject(obstaculo); s.FindProperty("tipo").enumValueIndex = (int)tipo;
             s.FindProperty("comprimento").floatValue = tamanho.z; s.ApplyModifiedPropertiesWithoutUndo();
             return SalvarPrefab(obstaculo, nome);
@@ -294,7 +415,10 @@ namespace TetiCorre.Editor
             PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
             var resultado = BuildPipeline.BuildPlayer(new[] { Cena }, "Builds/WebGL", BuildTarget.WebGL, BuildOptions.None);
             if (resultado.summary.result != BuildResult.Succeeded) throw new InvalidOperationException("Build WebGL falhou: veja o Console.");
-            Debug.Log("WebGL pronto em Builds/WebGL. Compacte o conteúdo com index.html na raiz do ZIP.");
+            string zip = "Builds/TetiCorre-WebGL.zip";
+            if (File.Exists(zip)) File.Delete(zip);
+            ZipFile.CreateFromDirectory("Builds/WebGL", zip, System.IO.Compression.CompressionLevel.Optimal, false);
+            Debug.Log("WebGL e ZIP prontos em Builds. TetiCorre-WebGL.zip pode ser enviado ao itch.io.");
         }
         [MenuItem("InfinityRunner/Exportar UnityPackage")]
         public static void Exportar()
@@ -303,7 +427,31 @@ namespace TetiCorre.Editor
             AssetDatabase.ExportPackage(Raiz, "Builds/TetiCorre.unitypackage", ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies);
             Debug.Log("Pacote pronto em Builds/TetiCorre.unitypackage.");
         }
-        // Entrada para validação isolada por linha de comando.
-        public static void MontarEExportar() { Montar(); Exportar(); }
+        private static bool PrepararRecursos(Action continuar)
+        {
+            if (Shader.Find("TextMeshPro/Mobile/Distance Field") != null && AssetDatabase.FindAssets("t:TMP_FontAsset").Any()) return false;
+            // ImportPackage é assíncrono: só montar depois do evento de conclusão.
+            AssetDatabase.ImportPackageCallback callback = null;
+            callback = nome =>
+            {
+                AssetDatabase.importPackageCompleted -= callback;
+                EditorApplication.delayCall += () =>
+                {
+                    try { continuar(); }
+                    catch (Exception e) { Debug.LogException(e); if (Application.isBatchMode) EditorApplication.Exit(1); }
+                };
+            };
+            AssetDatabase.importPackageCompleted += callback;
+            var pacote = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(TMP_FontAsset).Assembly);
+            AssetDatabase.ImportPackage(Path.Combine(pacote.resolvedPath, "Package Resources/TMP Essential Resources.unitypackage"), false);
+            return true;
+        }
+        // Execute sem -quit: a importação dos recursos precisa terminar primeiro.
+        public static void MontarEExportar()
+        {
+            if (PrepararRecursos(MontarEExportar)) return;
+            Montar(); Exportar();
+            if (Application.isBatchMode) EditorApplication.Exit(0);
+        }
     }
 }

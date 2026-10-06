@@ -120,6 +120,8 @@ namespace TetiCorre
         public void AtualizarIconeDeSom(bool mudo)
         {
             iconeSom.sprite = mudo ? spriteSomDesligado : spriteSomLigado;
+            var legenda = botaoSom.GetComponentInChildren<TMP_Text>();
+            if (legenda != null) legenda.text = mudo ? "SOM: OFF" : "SOM: ON";
         }
 
         // Escurece (ou clareia) a tela. Usa tempo "real" pra funcionar mesmo com o jogo pausado/lento.

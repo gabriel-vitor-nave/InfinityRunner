@@ -127,6 +127,7 @@ namespace TetiCorre
             if (Estado != EstadoDoJogo.Pausado) return;
 
             Estado = EstadoDoJogo.Morto; // evita "despausar" durante o fade
+            Velocidade = 0f;
             Time.timeScale = 1f;
             AudioManager.Instancia.TocarClique();
             RegistrarResultado();
