@@ -53,8 +53,10 @@ namespace TetiCorre
                 fontesEfeito[i].playOnAwake = false;
             }
 
-            Mudo = PlayerPrefs.GetInt(ChaveMudo, 0) == 1;
-            AudioListener.volume = Mudo ? 0f : 1f;
+            // A versão atual não tem comando de silenciar. Uma preferência da
+            // versão antiga não pode deixar o jogo sem música e sem como ativá-la.
+            Mudo = false;
+            AudioListener.volume = 1f;
         }
 
         // ---------- Músicas ----------

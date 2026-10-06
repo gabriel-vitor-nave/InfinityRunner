@@ -20,6 +20,8 @@ namespace TetiCorre.Editor
         private static float zPausa;
         private static int moedasAntes;
         private static bool viuPulo;
+        private static float alturaObservada;
+        private static float alturaPuloInicial;
         private static int distanciaDaCorrida;
         private static string erro;
 
@@ -35,7 +37,6 @@ namespace TetiCorre.Editor
         public static void MontarEExecutar()
         {
             MontadorDoJogo.Montar();
-            MontadorDoJogo.Exportar();
             Executar();
         }
 
@@ -90,6 +91,13 @@ namespace TetiCorre.Editor
                         }
                         UnityEngine.Object.DestroyImmediate(pose);
                         Exigir(Mathf.Abs(sola - jogador.transform.position.y) < .02f, "Pose da Teti apoiada no asfalto");
+                        Exigir(jogador.GetComponent<ApoioVisualDaTeti>().QuantidadePontosDeApoio > 0, "Apoio com vértices dos pés pré-calculados");
+                        var distancias = UnityEngine.Object.FindObjectsOfType<VisibilidadePorDistancia>();
+                        Exigir(distancias.Any(v => v.NivelAtual == 1) && distancias.Any(v => v.NivelAtual == 2), "Cenário distante simplificado e ocultado");
+                        foreach (var longe in distancias.Where(v => v.NivelAtual == 2))
+                            Exigir(longe.GetComponentsInChildren<Renderer>().All(r => !r.enabled), "Renderização distante desativada");
+                        Exigir(QualitySettings.shadowDistance <= 25.1f, "Sombras só perto do jogador");
+                        Exigir(Shader.GetGlobalFloat("_TetiForcaCurva") > 0f, "Curvatura visual ativa");
                         foreach (var setor in UnityEngine.Object.FindObjectsOfType<Segmento>())
                         {
                             var itens = (List<ItemDaPista>)typeof(Segmento).GetField("itens", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(setor);
@@ -98,7 +106,7 @@ namespace TetiCorre.Editor
                             foreach (var carro in itens.OfType<Obstaculo>())
                             {
                                 var pontos = carro.GetComponentsInChildren<MeshFilter>()
-                                    .Where(f => f.GetComponent<Renderer>() != null && f.GetComponent<Renderer>().enabled)
+                                    .Where(f => f.GetComponent<Renderer>() != null)
                                     .SelectMany(f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v))).ToArray();
                                 var minimo = pontos.Aggregate(Vector3.Min);
                                 var maximo = pontos.Aggregate(Vector3.Max);
@@ -122,11 +130,14 @@ namespace TetiCorre.Editor
                     case 2:
                         if (tempo < .5) return;
                         Exigir(Mathf.Abs(jogador.transform.position.z - zPausa) < .001f, "Pausa congela movimento");
-                        jogo.Continuar(); Comando(jogador, "PedirPulo"); viuPulo = false; Proxima(); break;
+                        jogo.Continuar(); Comando(jogador, "PedirPulo"); viuPulo = false; alturaObservada = 0f; Proxima(); break;
                     case 3:
                         if (jogador.transform.position.y > .3f) viuPulo = true;
-                        if (tempoJogo < .8f) return;
+                        alturaObservada = Mathf.Max(alturaObservada, jogador.transform.position.y);
+                        if (tempoJogo < jogo.Config.TempoNoArEm(jogo.Velocidade) + .15f) return;
                         Exigir(viuPulo && jogador.transform.position.y < .05f, "Pulo e aterrissagem");
+                        alturaPuloInicial = alturaObservada;
+                        Exigir(alturaObservada > 2.6f, "Salto inicial mais alto");
                         Comando(jogador, "TrocarFaixa", -1); Proxima(); break;
                     case 4:
                         if (tempoJogo < .3f) return;
@@ -177,13 +188,68 @@ namespace TetiCorre.Editor
                     case 12:
                         if (tempo < 1.5) return;
                         jogo.Continuar(); Capturar("Cenario");
-                        Terminar(true, "Menu, corrida, pausa, pulo, faixas, moeda, ímã, morte e reinício passaram."); break;
+                        jogo.Pausar(); UnityEngine.Object.FindObjectOfType<UIManager>().MostrarPausa(false);
+                        var ambiente = UnityEngine.Object.FindObjectOfType<AmbienteDaCorrida>();
+                        ambiente.AvancarCiclo(ambiente.DuracaoDoPeriodo - TempoCiclo(ambiente) + 8f);
+                        Exigir(ambiente.Noite && ambiente.FracaoNoite > .99f, "Primeira noite após um minuto de dia");
+                        Proxima(); break;
+                    case 13:
+                        if (tempo < .5) return;
+                        Capturar("Noite");
+                        var ciclo = UnityEngine.Object.FindObjectOfType<AmbienteDaCorrida>();
+                        var luzes = UnityEngine.Object.FindObjectsOfType<LuzDoPoste>().Select(p => p.GetComponent<Light>()).ToArray();
+                        Exigir(luzes.Count(l => l.enabled) > 0 && luzes.Count(l => l.enabled) <= 6, "Postes próximos acesos à noite, com limite de luzes");
+                        ciclo.AvancarCiclo(ciclo.DuracaoDoPeriodo - TempoCiclo(ciclo) + 8f);
+                        Exigir(!ciclo.Noite && ciclo.DuracaoDoPeriodo == 120f && ciclo.FracaoNoite < .01f, "Segundo dia dura dois minutos");
+                        Proxima(); break;
+                    case 14:
+                        if (tempo < .5) return;
+                        Capturar("Amanhecer");
+                        Exigir(UnityEngine.Object.FindObjectsOfType<LuzDoPoste>().All(p => !p.GetComponent<Light>().enabled), "Postes desligados de dia");
+                        var cicloLongo = UnityEngine.Object.FindObjectOfType<AmbienteDaCorrida>();
+                        cicloLongo.AvancarCiclo(120f);
+                        Exigir(cicloLongo.Noite && cicloLongo.DuracaoDoPeriodo == 120f, "Segunda noite dura dois minutos");
+                        cicloLongo.AvancarCiclo(120f);
+                        Exigir(!cicloLongo.Noite && cicloLongo.DuracaoDoPeriodo == 240f, "Próximo dia dura quatro minutos");
+                        jogo.DesistirEVoltarAoMenu(); Proxima(); break;
+                    case 15:
+                        if (jogo.Estado != EstadoDoJogo.Menu) return;
+                        jogo.Jogar(); typeof(GameManager).GetProperty("Velocidade").SetValue(jogo, jogo.Config.velocidadeMaxima);
+                        VerificarArcos(jogo);
+                        Comando(jogador, "PedirPulo"); alturaObservada = 0f; Proxima(); break;
+                    case 16:
+                        alturaObservada = Mathf.Max(alturaObservada, jogador.transform.position.y);
+                        if (tempoJogo < jogo.Config.TempoNoArEm(jogo.Velocidade) + .15f) return;
+                        Exigir(alturaObservada > alturaPuloInicial + .5f && jogador.transform.position.y < .05f, "Pulo cresce com a velocidade e aterrissa");
+                        Terminar(true, "Jogabilidade, apoio dos pés, limites de renderização e sombras, pulo proporcional à velocidade, arcos de moedas e ciclo dia/noite passaram."); break;
                 }
             }
             catch (Exception e) { Terminar(false, e.ToString()); }
         }
 
         private static void Exigir(bool condicao, string nome) { if (!condicao) throw new Exception("Falhou: " + nome); }
+        private static float TempoCiclo(AmbienteDaCorrida ambiente) =>
+            (float)typeof(AmbienteDaCorrida).GetField("tempoCiclo", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(ambiente);
+
+        private static void VerificarArcos(GameManager jogo)
+        {
+            var gerador = UnityEngine.Object.FindObjectOfType<Generator>();
+            var setor = UnityEngine.Object.FindObjectsOfType<Segmento>().First(s => Mathf.Abs(s.InicioZ) < .1f);
+            var method = typeof(Generator).GetMethod("ColocarMoedasEmArco", BindingFlags.NonPublic | BindingFlags.Instance);
+            var ids = new HashSet<int>(UnityEngine.Object.FindObjectsOfType<Moeda>().Select(m => m.GetInstanceID()));
+            typeof(GameManager).GetProperty("Velocidade").SetValue(jogo, jogo.Config.velocidadeInicial);
+            method.Invoke(gerador, new object[] { setor, -3.5f, 20f });
+            var lento = UnityEngine.Object.FindObjectsOfType<Moeda>().Where(m => !ids.Contains(m.GetInstanceID())).ToArray();
+            foreach (var moeda in lento) ids.Add(moeda.GetInstanceID());
+            typeof(GameManager).GetProperty("Velocidade").SetValue(jogo, jogo.Config.velocidadeMaxima);
+            method.Invoke(gerador, new object[] { setor, 3.5f, 30f });
+            var rapido = UnityEngine.Object.FindObjectsOfType<Moeda>().Where(m => !ids.Contains(m.GetInstanceID())).ToArray();
+            Exigir(lento.Length == 5 && rapido.Length == 5, "Cinco moedas em cada arco");
+            float alcanceLento = lento.Max(m => m.transform.position.z) - lento.Min(m => m.transform.position.z);
+            float alcanceRapido = rapido.Max(m => m.transform.position.z) - rapido.Min(m => m.transform.position.z);
+            Exigir(alcanceRapido > alcanceLento * 2f && rapido.Max(m => m.transform.position.y) > lento.Max(m => m.transform.position.y) + .5f,
+                "Espaçamento e altura das moedas de pulo acompanham a velocidade");
+        }
         private static void Capturar(string nome)
         {
             if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null) return;

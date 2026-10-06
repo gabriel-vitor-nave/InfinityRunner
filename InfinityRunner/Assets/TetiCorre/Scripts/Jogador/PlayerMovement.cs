@@ -116,8 +116,9 @@ namespace TetiCorre
             if (!noChao)
             {
                 float gravidade = descidaRapida ? config.gravidadeDescidaRapida : config.gravidade;
+                // Integração exata da aceleração constante: FPS baixo não diminui o salto.
+                posicao.y += velocidadeVertical * dt + .5f * gravidade * dt * dt;
                 velocidadeVertical += gravidade * dt;
-                posicao.y += velocidadeVertical * dt;
 
                 if (posicao.y <= 0f)
                 {
@@ -177,7 +178,7 @@ namespace TetiCorre
             tempoDesdePedidoDePulo = float.MaxValue;
             noChao = false;
             descidaRapida = false;
-            velocidadeVertical = config.VelocidadeDoPulo;
+            velocidadeVertical = config.VelocidadeDoPuloEm(GameManager.Instancia.Velocidade);
             animacao.Pular();
             AudioManager.Instancia.TocarPulo();
         }

@@ -4,7 +4,7 @@
 
 **Teti Corre!**
 
-Corra pela cidade, salte sobre barreiras e troque entre três faixas para pegar
+Corra pela cidade, salte sobre carros baixos e troque entre três faixas para pegar
 moedas. Um ímã ajuda na coleta; a velocidade aumenta conforme você avança.
 Até onde você consegue chegar?
 

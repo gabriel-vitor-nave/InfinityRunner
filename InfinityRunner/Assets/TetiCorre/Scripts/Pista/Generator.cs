@@ -224,13 +224,17 @@ namespace TetiCorre
         {
             // Estimativa da velocidade quando o jogador chegar aqui.
             float velocidade = Mathf.Min(EstimarVelocidadeEm(zBarreira), config.velocidadeMaxima);
-            float distanciaDoPulo = velocidade * config.TempoNoAr;
+            float duracao = config.TempoNoArEm(velocidade);
+            float impulso = config.VelocidadeDoPuloEm(velocidade);
+            float meio = duracao * .5f;
+            float inicio = zBarreira - DistanciaDurantePulo(velocidade, meio);
 
             for (int i = 0; i < moedasPorFileira; i++)
             {
                 float t = i / (float)(moedasPorFileira - 1);           // 0 → 1 ao longo do pulo
-                float altura = config.alturaPulo * 4f * t * (1f - t);   // parábola: 0 → altura máx → 0
-                float z = zBarreira + (t - 0.5f) * distanciaDoPulo;
+                float tempo = t * duracao;
+                float altura = impulso * tempo + .5f * config.gravidade * tempo * tempo;
+                float z = inicio + DistanciaDurantePulo(velocidade, tempo);
                 ColocarItem(segmento, poolMoeda, new Vector3(x, alturaMoeda + altura, z));
             }
         }
@@ -239,8 +243,16 @@ namespace TetiCorre
         {
             GameManager jogo = GameManager.Instancia;
             float velocidadeAtual = jogo != null && jogo.Velocidade > 0f ? jogo.Velocidade : config.velocidadeInicial;
-            float tempoAteLa = Mathf.Max(0f, z - jogador.position.z) / velocidadeAtual;
-            return velocidadeAtual + config.aceleracao * tempoAteLa;
+            return Mathf.Min(config.velocidadeMaxima,
+                Mathf.Sqrt(velocidadeAtual * velocidadeAtual + 2f * config.aceleracao * Mathf.Max(0f, z - jogador.position.z)));
+        }
+
+        private float DistanciaDurantePulo(float velocidade, float tempo)
+        {
+            if (config.aceleracao <= 0f) return velocidade * tempo;
+            float ateLimite = Mathf.Clamp((config.velocidadeMaxima - velocidade) / config.aceleracao, 0f, tempo);
+            return velocidade * ateLimite + .5f * config.aceleracao * ateLimite * ateLimite
+                + config.velocidadeMaxima * (tempo - ateLimite);
         }
 
         private static void ColocarItem(Segmento segmento, ObjectPool<ItemDaPista> pool, Vector3 posicao)

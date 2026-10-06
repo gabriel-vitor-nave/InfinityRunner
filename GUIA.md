@@ -44,7 +44,9 @@ Ele é desativado ao jogar; a pista dinâmica assume a geração e a reciclagem.
 
 ## Extras e ajustes
 
-O recorde e a preferência de som usam `PlayerPrefs`. O ímã atrai moedas próximas
+O recorde usa `PlayerPrefs`. A música e os efeitos ficam ativos; a corrida não
+tem botões de som ou de pausa. Ao perder o foco da janela, o jogo pausa para
+não continuar correndo em outra aba. O ímã atrai moedas próximas
 por um tempo limitado. A interface mostra distância, pontos e duração do ímã.
 `CameraFollow` alterna entre o enquadramento do menu e da corrida, e treme na
 batida. `EfeitosVisuais` emite partículas ao coletar e ao bater.
@@ -56,7 +58,7 @@ entender o efeito no jogo.
 
 ## Verificação antes da entrega
 
-Teste Play, três faixas, pulo sobre barreira, coleta, colisão, pausa, retorno ao
+Teste Play, três faixas, pulo sobre carro baixo, coleta, colisão, pausa automática, retorno ao
 menu, recorde após fechar/reabrir, som e swipe. Depois repita os testes no build
 WebGL servido por HTTP, incluindo trocar de aba. Importar o `.unitypackage` em
 um projeto limpo verifica se todos os assets necessários foram exportados.

@@ -44,6 +44,10 @@ namespace TetiCorre.Editor
             }
             var config = Asset<ConfiguracaoDoJogo>("Configuracao.asset");
             config.comprimentoSegmento = 50f; config.larguraFaixa = 3.5f;
+            if (Mathf.Approximately(config.alturaPulo, 2.2f)) config.alturaPulo = 3f;
+            if (Mathf.Approximately(config.gravidade, -40f)) config.gravidade = -32f;
+            if (config.segmentosNaFrente == 6) config.segmentosNaFrente = 4;
+            if (config.segmentosAtras == 2) config.segmentosAtras = 1;
             EditorUtility.SetDirty(config);
             var asfalto = Material("Asfalto", new Color(.13f, .18f, .25f));
             var azul = Material("Azul", new Color(.1f, .55f, .8f));
@@ -53,9 +57,9 @@ namespace TetiCorre.Editor
 
             var segmentoObj = new GameObject("Segmento");
             var segmento = segmentoObj.AddComponent<Segmento>();
-            Cubo("Pista 10,5 x 50", segmentoObj.transform, new Vector3(0, -.2f, 25), new Vector3(10.5f, .4f, 50), asfalto);
+            CriarChao("Rua", segmentoObj.transform, 0, 10.5f, 0f, asfalto);
             foreach (float lado in new[] { -1f, 1f })
-                Cubo("Calçada elevada", segmentoObj.transform, new Vector3(lado * 6.25f, .12f, 25), new Vector3(2f, .24f, 50), branco);
+                CriarChao("Calcada", segmentoObj.transform, lado * 6.25f, 2f, .24f, branco);
             foreach (float x in new[] { -1.75f, 1.75f })
                 for (int z = 1; z < 50; z += 4)
                     Cubo("Marca", segmentoObj.transform, new Vector3(x, .015f, z), new Vector3(.08f, .02f, 2), branco);
@@ -87,12 +91,15 @@ namespace TetiCorre.Editor
             }
             foreach (var renderer in disco.GetComponentsInChildren<Renderer>()) renderer.sharedMaterial = materialMoeda != null ? materialMoeda : amarelo;
             var rotacao = moedaObj.AddComponent<CollectableRotate>(); Ligar(rotacao, "visual", disco.transform);
+            MateriaisCurvos(moedaObj);
+            PrepararItemVisivel(moedaObj, false);
             moeda = SalvarPrefab(moeda, "Moeda");
             var imaObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             imaObj.name = "Ima";
             imaObj.transform.localScale = Vector3.one * .7f;
             imaObj.GetComponent<Renderer>().sharedMaterial = azul;
             imaObj.GetComponent<Collider>().isTrigger = true;
+            PrepararItemVisivel(imaObj, false);
             var ima = SalvarPrefab(imaObj.AddComponent<Ima>(), "Ima");
 
             var prefabJogador = AssetDatabase.LoadAssetAtPath<GameObject>(Raiz + "/Prefabs/Jogador/Teti.prefab");
@@ -122,6 +129,7 @@ namespace TetiCorre.Editor
             var apoio = jogadorObj.AddComponent<ApoioVisualDaTeti>();
             Ligar(apoio, "modelo", modelo.transform); Ligar(apoio, "animator", animator);
             Ligar(apoio, "danca", AssetDatabase.LoadAssetAtPath<AnimationClip>(Gerados + "/Danca_Boba.anim"));
+            apoio.PrepararPontos();
             apoio.AtualizarPreview(.8f);
             var animacao = jogadorObj.AddComponent<AnimacaoDoJogador>();
             Ligar(animacao, "animator", animator); Ligar(animacao, "modelo", modelo.transform);
@@ -132,17 +140,24 @@ namespace TetiCorre.Editor
             var camera = cameraObj.GetComponent<Camera>();
             camera.backgroundColor = new Color(.45f, .72f, .9f); camera.clearFlags = CameraClearFlags.Skybox;
             RenderSettings.skybox = AssetDatabase.LoadAssetAtPath<Material>("Assets/Pacotes/Day-Night Skyboxes/Materials/SkyBrightMorning.mat");
-            camera.farClipPlane = 220;
+            camera.farClipPlane = 155;
             RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = camera.backgroundColor; RenderSettings.fogStartDistance = 100; RenderSettings.fogEndDistance = 200;
+            RenderSettings.fogColor = camera.backgroundColor; RenderSettings.fogStartDistance = 80; RenderSettings.fogEndDistance = 135;
             var seguir = cameraObj.AddComponent<CameraFollow>(); Ligar(seguir, "alvo", jogadorObj.transform);
             seguir.IrParaMenu();
             var luz = new GameObject("Sol", typeof(Light)).GetComponent<Light>();
             luz.type = LightType.Directional; luz.intensity = 1.2f; luz.transform.rotation = Quaternion.Euler(45, -30, 0);
             luz.shadows = LightShadows.Soft;
-            QualitySettings.shadowDistance = 60f;
+            QualitySettings.shadowDistance = config.distanciaSombras;
             RenderSettings.ambientLight = new Color(.65f, .7f, .8f);
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+            var ambiente = new GameObject("Ambiente — distância, curvatura, dia e noite").AddComponent<AmbienteDaCorrida>();
+            Ligar(ambiente, "jogador", jogadorObj.transform); Ligar(ambiente, "config", config);
+            Ligar(ambiente, "sol", luz); Ligar(ambiente, "ceu", RenderSettings.skybox);
+            Ligar(ambiente, "ceuNoite", AssetDatabase.LoadAssetAtPath<Material>("Assets/Pacotes/Day-Night Skyboxes/Materials/SkyMidnight.mat"));
+            Ligar(ambiente, "luzDosPostes", Material("Lampadas", new Color(.9f, .83f, .65f)));
+            Shader.SetGlobalFloat("_TetiZ", 0f); Shader.SetGlobalFloat("_TetiInicioCurva", config.inicioCurvatura);
+            Shader.SetGlobalFloat("_TetiForcaCurva", config.forcaCurvatura); Shader.SetGlobalFloat("_TetiNoite", 0f);
             var gerador = new GameObject("Gerador").AddComponent<Generator>();
             Ligar(gerador, "config", config); Ligar(gerador, "jogador", jogadorObj.transform);
             LigarArray(gerador, "prefabsSegmento", segmento);
@@ -206,21 +221,43 @@ namespace TetiCorre.Editor
             foreach (float lado in new[] { -1f, 1f })
                 for (int z = 5; z < 50; z += 10)
                 {
-                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelos[(z / 10) % modelos.Length]), pai);
+                    var grupo = new GameObject("Prédio — detalhes próximos / silhueta distante");
+                    grupo.transform.SetParent(pai, false);
+                    var obj = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(modelos[(z / 10) % modelos.Length]), grupo.transform);
                     obj.transform.localRotation = Quaternion.Euler(0, lado > 0 ? -90 : 90, 0);
                     AjustarModelo(obj, 7f, true);
                     var limites = LimitesVisuais(obj);
                     float fator = Mathf.Min(1f, 9f / limites.size.z, 6f / limites.size.x);
                     obj.transform.localScale *= fator;
-                    AjustarCentroNoChao(obj, pai);
+                    AjustarCentroNoChao(obj, grupo.transform);
                     limites = LimitesVisuais(obj);
-                    obj.transform.localPosition += new Vector3(lado * (7.5f + limites.extents.x), .24f, z);
+                    grupo.transform.localPosition = new Vector3(lado * (7.5f + limites.extents.x), .24f, z);
                     foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
+                    MateriaisCurvos(obj);
+                    var cor = new[] { new Color(.9f, .64f, .57f), new Color(.68f, .73f, .83f), new Color(.85f, .7f, .62f), new Color(.7f, .82f, .65f), new Color(.86f, .84f, .58f) }[z / 10];
+                    Cubo("Silhueta distante", grupo.transform, Vector3.up * limites.size.y * .5f, limites.size,
+                        Material("PredioDistante_" + z / 10, cor));
+                    var simplificado = grupo.transform.Find("Silhueta distante").GetComponent<Renderer>();
+                    simplificado.enabled = false;
+                    var vis = grupo.AddComponent<VisibilidadePorDistancia>();
+                    LigarArray(vis, "detalhes", obj.GetComponentsInChildren<Renderer>());
+                    LigarArray(vis, "simplificados", simplificado);
                 }
             foreach (float lado in new[] { -1f, 1f })
                 for (int z = 8; z < 50; z += 15)
-                    ModeloImportado("Props/Props_Street Light.prefab", pai,
-                        new Vector3(lado * 6.25f, .24f, z), new Vector3(.8f, 4, 1));
+                {
+                    var grupo = new GameObject("Poste — acende à noite"); grupo.transform.SetParent(pai, false);
+                    grupo.transform.localPosition = new Vector3(lado * 6.25f, .24f, z);
+                    ModeloImportado("Props/Props_Street Light.prefab", grupo.transform, Vector3.zero, new Vector3(.8f, 4, 1));
+                    var lampada = Material("Lampadas", new Color(.9f, .83f, .65f));
+                    lampada.SetColor("_EmissionColor", new Color(2.5f, 1.8f, .8f));
+                    Cubo("Lâmpada", grupo.transform, new Vector3(-lado * .25f, 3.85f, 0), new Vector3(.25f, .06f, .35f), lampada);
+                    var ponto = new GameObject("Luz noturna", typeof(Light), typeof(LuzDoPoste));
+                    ponto.transform.SetParent(grupo.transform, false); ponto.transform.localPosition = new Vector3(-lado * .25f, 3.7f, 0);
+                    var luz = ponto.GetComponent<Light>(); luz.type = LightType.Point; luz.range = 9f;
+                    luz.color = new Color(1f, .72f, .37f); luz.shadows = LightShadows.None; luz.enabled = false;
+                    grupo.AddComponent<VisibilidadePorDistancia>();
+                }
         }
 
         private static GameObject ModeloImportado(string caminho, Transform pai, Vector3 posicao, Vector3 tamanho)
@@ -236,7 +273,78 @@ namespace TetiCorre.Editor
             AjustarCentroNoChao(obj, pai);
             obj.transform.localPosition += posicao;
             foreach (var collider in obj.GetComponentsInChildren<Collider>()) UnityEngine.Object.DestroyImmediate(collider);
+            MateriaisCurvos(obj);
             return obj;
+        }
+
+        private static void PrepararItemVisivel(GameObject obj, bool sombras)
+        {
+            var vis = obj.AddComponent<VisibilidadePorDistancia>();
+            var s = new SerializedObject(vis);
+            s.FindProperty("itemDaPista").boolValue = true;
+            s.FindProperty("geraSombras").boolValue = sombras;
+            s.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void MateriaisCurvos(GameObject obj)
+        {
+            var shader = Shader.Find("TetiCorre/Cidade Curva");
+            if (shader == null) throw new InvalidOperationException("Shader da cidade curva não importado.");
+            foreach (var renderer in obj.GetComponentsInChildren<Renderer>())
+            {
+                var materiais = renderer.sharedMaterials;
+                for (int i = 0; i < materiais.Length; i++)
+                {
+                    var original = materiais[i];
+                    if (original == null || original.shader == shader) continue;
+                    AssetDatabase.TryGetGUIDAndLocalFileIdentifier(original, out string guid, out long id);
+                    string path = Gerados + "/Curvo_" + guid + "_" + id + ".mat";
+                    var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                    if (material == null) { material = new Material(shader); AssetDatabase.CreateAsset(material, path); }
+                    material.CopyPropertiesFromMaterial(original); material.shader = shader;
+                    material.enableInstancing = true;
+                    materiais[i] = material;
+                    EditorUtility.SetDirty(material);
+                }
+                renderer.sharedMaterials = materiais;
+            }
+        }
+
+        private static void CriarChao(string nome, Transform pai, float x, float largura, float y, Material material)
+        {
+            // Vértices a cada 2 m deixam o efeito de curvatura suave em vez de
+            // dobrar um cubo de 50 m só nas pontas. Rua e calçada usam três faces.
+            const int passos = 25;
+            var vertices = new Vector3[(passos + 1) * 4];
+            var uv = new Vector2[vertices.Length];
+            var triangulos = new int[passos * 18];
+            for (int i = 0; i <= passos; i++)
+            {
+                float z = i * 2f;
+                vertices[i * 4] = new Vector3(-largura * .5f, y - .24f, z);
+                vertices[i * 4 + 1] = new Vector3(-largura * .5f, y, z);
+                vertices[i * 4 + 2] = new Vector3(largura * .5f, y, z);
+                vertices[i * 4 + 3] = new Vector3(largura * .5f, y - .24f, z);
+                for (int k = 0; k < 4; k++) uv[i * 4 + k] = new Vector2(k / 3f, z / 10f);
+                if (i == passos) continue;
+                for (int k = 0; k < 3; k++)
+                {
+                    int a = i * 4 + k, b = a + 1, c = a + 4, d = b + 4;
+                    int t = i * 18 + k * 6;
+                    triangulos[t] = a; triangulos[t + 1] = c; triangulos[t + 2] = b;
+                    triangulos[t + 3] = b; triangulos[t + 4] = c; triangulos[t + 5] = d;
+                }
+            }
+            string path = Gerados + "/" + nome + ".asset";
+            var mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (mesh == null) { mesh = new Mesh(); AssetDatabase.CreateAsset(mesh, path); }
+            mesh.Clear(); mesh.name = nome; mesh.vertices = vertices; mesh.uv = uv; mesh.triangles = triangulos;
+            mesh.RecalculateNormals(); mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
+            var obj = new GameObject(nome, typeof(MeshFilter), typeof(MeshRenderer));
+            obj.transform.SetParent(pai, false); obj.transform.localPosition = new Vector3(x, 0, 0);
+            obj.GetComponent<MeshFilter>().sharedMesh = mesh;
+            obj.GetComponent<MeshRenderer>().sharedMaterial = material;
+            obj.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         private static Bounds LimitesVisuais(GameObject obj)
@@ -430,6 +538,7 @@ namespace TetiCorre.Editor
             UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshRenderer>());
             UnityEngine.Object.DestroyImmediate(obj.GetComponentInChildren<MeshFilter>());
             ModeloImportado("Vehicles/Vehicle with Static Wheels/" + veiculo + ".prefab", obj.transform, Vector3.zero, tamanho);
+            PrepararItemVisivel(obj, true);
             var s = new SerializedObject(obstaculo); s.FindProperty("tipo").enumValueIndex = (int)tipo;
             s.FindProperty("comprimento").floatValue = tamanho.z; s.ApplyModifiedPropertiesWithoutUndo();
             return SalvarPrefab(obstaculo, nome);
@@ -445,7 +554,7 @@ namespace TetiCorre.Editor
         private static T Asset<T>(string nome) where T : ScriptableObject
         { var asset = AssetDatabase.LoadAssetAtPath<T>(Gerados + "/" + nome); if (asset == null) { asset = ScriptableObject.CreateInstance<T>(); AssetDatabase.CreateAsset(asset, Gerados + "/" + nome); } return asset; }
         private static Material Material(string nome, Color cor)
-        { var mat = AssetDatabase.LoadAssetAtPath<Material>(Gerados + "/" + nome + ".mat"); if (mat == null) { mat = new Material(Shader.Find("Standard")); AssetDatabase.CreateAsset(mat, Gerados + "/" + nome + ".mat"); } mat.color = cor; return mat; }
+        { var mat = AssetDatabase.LoadAssetAtPath<Material>(Gerados + "/" + nome + ".mat"); var shader = Shader.Find("TetiCorre/Cidade Curva"); if (mat == null) { mat = new Material(shader); AssetDatabase.CreateAsset(mat, Gerados + "/" + nome + ".mat"); } mat.shader = shader; mat.enableInstancing = true; mat.color = cor; EditorUtility.SetDirty(mat); return mat; }
         private static void Ligar(UnityEngine.Object alvo, string campo, UnityEngine.Object valor)
         { var s = new SerializedObject(alvo); s.FindProperty(campo).objectReferenceValue = valor; s.ApplyModifiedPropertiesWithoutUndo(); }
         private static void LigarArray(UnityEngine.Object alvo, string campo, params UnityEngine.Object[] valores)
